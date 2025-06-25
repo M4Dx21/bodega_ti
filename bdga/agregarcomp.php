@@ -62,6 +62,7 @@ if (isset($_POST['agregar'])) {
     $estado = $_POST["estado"];
     $ubicacion = $_POST["ubicacion"];
     $observaciones = $_POST["observaciones"];
+    $garantia = $_POST["garantia"];
     $fecha_ingreso = date('Y-m-d H:i:s');
 
     $consulta_existente = "SELECT * FROM componentes WHERE codigo = '$codigo'";
@@ -76,13 +77,14 @@ if (isset($_POST['agregar'])) {
                     estado = '$estado', 
                     ubicacion = '$ubicacion',
                     observaciones = '$observaciones', 
-                    fecha_ingreso = '$fecha_ingreso'
+                    fecha_ingreso = '$fecha_ingreso',
+                    garantia = '$garantia'
                    WHERE codigo = '$codigo'";
         mysqli_query($conn, $update);
         $mensaje = "Insumo actualizado correctamente.";
     } else {
-        $insert = "INSERT INTO componentes (codigo, insumo, stock, categoria, marca, estado, ubicacion, observaciones, fecha_ingreso, comprobante) 
-           VALUES ('$codigo', '$nombre', '$stock', '$especialidad', '$formato', '$estado', '$ubicacion', '$observaciones', '$fecha_ingreso', " . ($archivo_nombre ? "'$archivo_nombre'" : "NULL") . ")";
+        $insert = "INSERT INTO componentes (codigo, insumo, stock, categoria, marca, estado, ubicacion, observaciones, fecha_ingreso, garantia, comprobante) 
+           VALUES ('$codigo', '$nombre', '$stock', '$especialidad', '$formato', '$estado', '$ubicacion', '$observaciones', '$fecha_ingreso', '$garantia', " . ($archivo_nombre ? "'$archivo_nombre'" : "NULL") . ")";
         mysqli_query($conn, $insert);
         $mensaje = "Insumo agregado correctamente.";
     }
@@ -131,6 +133,7 @@ if (isset($_POST['guardar_cambios'])) {
     $estado = $_POST["estado"];
     $ubicacion = $_POST["ubicacion"];
     $observaciones = $_POST["observaciones"];
+    $garantia = $_POST["garantia"];
     $fecha_ingreso = date('Y-m-d H:i:s');
 
     $update = "UPDATE componentes SET 
@@ -141,7 +144,8 @@ if (isset($_POST['guardar_cambios'])) {
             estado = '$estado', 
             ubicacion = '$ubicacion',
             observaciones = '$observaciones', 
-            fecha_ingreso = '$fecha_ingreso'" .
+            fecha_ingreso = '$fecha_ingreso',
+            garantia = '$garantia' ".
             ($archivo_nombre ? ", comprobante = '$archivo_nombre'" : "") . "
            WHERE codigo = '$codigo'";
     mysqli_query($conn, $update);
@@ -219,6 +223,8 @@ if ($result->num_rows > 0) {
             <?php if ($editando): ?>
                 <input type="hidden" name="id" value="<?= $componente_edit['id'] ?>">
             <?php endif; ?>
+            <input type="text" id="codigo" name="codigo" placeholder="Número de serie"
+                value="<?= $editando ? $componente_edit['codigo'] : '' ?>" autofocus>
             <input type="text" name="categoria" placeholder="Categoria" required
                 value="<?= $editando ? $componente_edit['categoria'] : '' ?>">
             <input type="text" name="marca" placeholder="Marca" required
@@ -243,8 +249,8 @@ if ($result->num_rows > 0) {
                     </option>
                 <?php endforeach; ?>
             </select>
-            <input type="text" id="codigo" name="codigo" placeholder="Número de serie"
-                value="<?= $editando ? $componente_edit['codigo'] : '' ?>" autofocus>
+            <input type="date" name="garantia" placeholder="Fecha de Caducidad de garantia" required
+                value="<?= $editando ? $componente_edit['garantia'] : '' ?>">
             <div class="file-upload-wrapper">
                 <label for="comprobante" class="file-upload-label">
                     <i class="fas fa-file-upload"></i> Adjuntar Comprobante (PDF, Word, etc.)
@@ -261,83 +267,6 @@ if ($result->num_rows > 0) {
                 <button type="submit" name="agregar">Agregar Insumos</button>
             <?php endif; ?>
         </form>
-        <?php if (!empty($personas_dentro)): ?>
-            <h2>Lista de Insumos</h2>
-            <table>
-            <tr>
-                <th>Código</th>
-                <th>Modelo</th>
-                <th>Stock</th>
-                <th>Categoria</th>
-                <th>Marca</th>
-                <th>Ubicacion</th>
-                <th>Fecha</th>
-                <th>Observaciones</th>
-                <th>Acciones</th>
-         <!--   <th>QR</th> -->   
-            </tr>
-            <?php foreach ($personas_dentro as $componente): ?>
-                <tr>
-                    <td><?= htmlspecialchars($componente['codigo']) ?></td>
-                    <td><?= htmlspecialchars($componente['insumo']) ?></td>
-                    <td><?= htmlspecialchars($componente['stock']) ?></td>
-                    <td><?= htmlspecialchars($componente['categoria']) ?></td>
-                    <td><?= htmlspecialchars($componente['marca']) ?></td>
-                    <td><?= htmlspecialchars($componente['ubicacion']) ?></td>
-                    <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
-                    <td><?= htmlspecialchars($componente['observaciones']) ?></td>
-                    <td class="btn-acciones-group">
-                        <a href="?editar=<?= $componente['id'] ?>" class="btn-accion">Editar</a>
-                        <a href="?eliminar=<?= $componente['id'] ?>" class="btn-accion btn-eliminar" onclick="return confirm('¿Estás seguro de eliminar este componente?');">Eliminar</a>
-                        <a href="?comprobante=<?= $componente['id'] ?>" class="btn-accion btn-ver">Comprobante</a>
-                    </td>
-        <!--        <td>
-                    <button onclick="generarCodigoBarras('<?= htmlspecialchars($componente['codigo']) ?>', 'barcode_<?= $componente['id'] ?>')">Generar Código</button>
-                    <svg id="barcode_<?= $componente['id'] ?>" style="margin-top:5px;"></svg>
-                    </td>  -->   
-                </tr>
-            <?php endforeach; ?>
-            </table>
-            <form method="GET" style="margin-bottom: 10px;">
-                <label for="cantidad">Mostrar:</label>
-                <select name="cantidad" onchange="this.form.submit()"> 
-                    <?php foreach ([10, 20, 30, 40, 50] as $cantidad): ?>
-                        <option value="<?= $cantidad ?>" <?= $cantidad_por_pagina == $cantidad ? 'selected' : '' ?>><?= $cantidad ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <input type="hidden" name="pagina" value="1">
-            </form>
-            <div class="pagination-container">
-                <?php
-                $rango_visible = 5;
-                $inicio = max(1, $pagina_actual - floor($rango_visible / 2));
-                $fin = min($total_paginas, $inicio + $rango_visible - 1);
-
-                if ($inicio > 1) {
-                    echo '<a href="?pagina=1&cantidad=' . $cantidad_por_pagina . '">1</a>';
-                    if ($inicio > 2) echo '<span>...</span>';
-                }
-
-                for ($i = $inicio; $i <= $fin; $i++) {
-                    $active = $pagina_actual == $i ? 'active' : '';
-                    echo '<a href="?pagina=' . $i . '&cantidad=' . $cantidad_por_pagina . '" class="' . $active . '">' . $i . '</a>';
-                }
-
-                if ($fin < $total_paginas) {
-                    if ($fin < $total_paginas - 1) echo '<span>...</span>';
-                    echo '<a href="?pagina=' . $total_paginas . '&cantidad=' . $cantidad_por_pagina . '">' . $total_paginas . '</a>';
-                }
-
-                if ($pagina_actual > 1) {
-                    echo '<a href="?pagina=' . ($pagina_actual - 1) . '&cantidad=' . $cantidad_por_pagina . '">Anterior</a>';
-                }
-
-                if ($pagina_actual < $total_paginas) {
-                    echo '<a href="?pagina=' . ($pagina_actual + 1) . '&cantidad=' . $cantidad_por_pagina . '">Siguiente</a>';
-                }
-                ?>
-            </div>
-        <?php endif; ?>
                 <?php if (isset($_GET['importado'])): ?>
             <div id="success-msg">¡Archivo importado correctamente!</div>
         <?php endif; ?>
@@ -394,7 +323,7 @@ if ($result->num_rows > 0) {
             if (data.encontrado) {
                 document.querySelector('input[name="codigo"]').value = data.codigo;
                 document.querySelector('input[name="insumo"]').value = data.insumo;
-                document.querySelector('input[name="stock"]').value = data.stock ?? ''; // Solo si lo agregas más abajo
+                document.querySelector('input[name="stock"]').value = data.stock ?? '';
                 document.querySelector('input[name="marca"]').value = data.marca;
                 document.querySelector('input[name="categoria"]').value = data.categoria;
                 document.querySelector('select[name="ubicacion"]').value = data.ubicacion;

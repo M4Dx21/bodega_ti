@@ -3,7 +3,7 @@ session_start();
 include 'db.php';
 include 'funciones.php';
 
-$nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
+$nombre_usuario_filtro = isset($_GET['categoria']) ? $conn->real_escape_string($_GET['categoria']) : '';
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
@@ -12,11 +12,7 @@ $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 $sql_base = "FROM componentes WHERE 1";
 
 if (!empty($nombre_usuario_filtro)) {
-    $sql_base .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
-}
-$insumosBajos = obtenerInsumosBajoStock($conn);
-if ($insumosBajos !== false && !empty($insumosBajos)) {
-    $_SESSION['alertas_stock'] = $insumosBajos;
+    $sql_base .= " AND (categoria LIKE '%$nombre_usuario_filtro%')";
 }
 
 $sql_total = "SELECT COUNT(*) as total FROM (
@@ -73,50 +69,6 @@ if (isset($_GET['query'])) {
                 gap: 10px;
                 flex-wrap: wrap;
             }
-            
-            .btn-alertas {
-                position: relative;
-                background-color: #f8d7da;
-                color: #721c24;
-                border: 1px solid #f5c6cb;
-                border-radius: 4px;
-                padding: 6px 12px;
-                cursor: pointer;
-                transition: all 0.3s;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                font-size: 14px;
-            }
-            
-            .btn-alertas:hover {
-                background-color: #f5c6cb;
-            }
-            
-            .alert-badge {
-                background-color: #dc3545;
-                color: white;
-                border-radius: 50%;
-                width: 18px;
-                height: 18px;
-                font-size: 11px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .alert-panel {
-                display: none;
-                position: absolute;
-                top: 35px;
-                right: 0;
-                width: 280px;
-                background: white;
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                border-radius: 5px;
-                z-index: 1000;
-                padding: 12px;
-            }
     </style>
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
@@ -148,44 +100,9 @@ if (isset($_GET['query'])) {
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
                     <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
-                    
-                    <div style="position: relative; display: inline-block;">
-                        <button type="button" class="btn-alertas" onclick="toggleAlertPanel()">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            Alertas de Stock
-                            <?php if (!empty($insumosBajos)): ?>
-                                <span class="alert-badge"><?= count($insumosBajos) ?></span>
-                            <?php endif; ?>
-                        </button>
-
-                        <div class="alert-panel" id="alertPanel">
-                            <?php if (!empty($insumosBajos)): ?>
-                                <h5 style="margin-top: 0; color: #721c24;">
-                                    <i class="fas fa-boxes"></i> Stock Bajo
-                                </h5>
-                                    <ul>
-                                    <?php foreach ($insumosBajos as $insumo): ?>
-                                        <li>
-                                            <strong><?= htmlspecialchars($insumo['insumo']) ?></strong><br>
-                                            Stock total: <?= $insumo['stock'] ?> <br>
-                                            Ubicación: <?= htmlspecialchars($insumo['ubicacion']) ?>
-                                        </li>
-                                    <?php endforeach; ?>
-                                    </ul>
-                            <?php else: ?>
-                                <p style="margin-bottom: 0;">No hay alertas de stock</p>
-                            <?php endif; ?>
-                        </div>
-                    </div>
                 </div>
-                <a href="peticiones.php" class="btn-dashboard">📄 Ver historial de salidas</a>
-
-                </form>
-                <button class="btn-dashboard" id="dashboardBtn"><i class="fas fa-chart-line"></i> Dashboard</button>
+            </form>
         </div>
-        <form action="agregarcomp.php" method="post">
-            <button type="submit">Agregar Insumos</button>
-        </form>
         <?php if (!empty($personas_dentro)): ?>
             <h2>Lista de Insumos</h2>
                 <table>
@@ -209,56 +126,12 @@ if (isset($_GET['query'])) {
                         </tr>
                     <?php endforeach; ?>
                 </table>
-            <form method="GET" style="margin-bottom: 10px;">
-                <label for="cantidad">Mostrar:</label>
-                <select name="cantidad" onchange="this.form.submit()">
-                    <?php foreach ([10, 20, 30, 40, 50] as $cantidad): ?>
-                        <option value="<?= $cantidad ?>" <?= $cantidad_por_pagina == $cantidad ? 'selected' : '' ?>><?= $cantidad ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <input type="hidden" name="pagina" value="1">
-            </form>
-            <div class="pagination-container">
-                <?php
-                $rango_visible = 5;
-                $inicio = max(1, $pagina_actual - floor($rango_visible / 2));
-                $fin = min($total_paginas, $inicio + $rango_visible - 1);
-
-                if ($inicio > 1) {
-                    echo '<a href="?pagina=1&cantidad=' . $cantidad_por_pagina . '">1</a>';
-                    if ($inicio > 2) echo '<span>...</span>';
-                }
-
-                for ($i = $inicio; $i <= $fin; $i++) {
-                    $active = $pagina_actual == $i ? 'active' : '';
-                    echo '<a href="?pagina=' . $i . '&cantidad=' . $cantidad_por_pagina . '" class="' . $active . '">' . $i . '</a>';
-                }
-
-                if ($fin < $total_paginas) {
-                    if ($fin < $total_paginas - 1) echo '<span>...</span>';
-                    echo '<a href="?pagina=' . $total_paginas . '&cantidad=' . $cantidad_por_pagina . '">' . $total_paginas . '</a>';
-                }
-
-                if ($pagina_actual > 1) {
-                    echo '<a href="?pagina=' . ($pagina_actual - 1) . '&cantidad=' . $cantidad_por_pagina . '">Anterior</a>';
-                }
-
-                if ($pagina_actual < $total_paginas) {
-                    echo '<a href="?pagina=' . ($pagina_actual + 1) . '&cantidad=' . $cantidad_por_pagina . '">Siguiente</a>';
-                }
-                ?>
-            </div>
         <?php else: ?>
             <p>No se encontraron resultados para tu búsqueda.</p>
         <?php endif; ?>
     </div>
 
     <script>
-        function toggleAlertPanel() {
-            const panel = document.getElementById('alertPanel');
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-        }
-        
         document.addEventListener('click', function(event) {
             const alertBtn = document.querySelector('.btn-alertas');
             const panel = document.getElementById('alertPanel');
@@ -315,9 +188,6 @@ if (isset($_GET['query'])) {
             const info = document.getElementById('accountInfo');
             info.style.display = info.style.display === 'none' ? 'block' : 'none';
         }
-        document.getElementById('dashboardBtn').addEventListener('click', function() {
-            window.location.href = 'dashboard.php';
-        });
     </script>
 </body>
 </html>

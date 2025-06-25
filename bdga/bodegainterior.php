@@ -155,9 +155,6 @@ if (isset($_GET['query'])) {
                 </div>
                 </form>
         </div>
-        <form action="agregarcomp.php" method="post">
-            <button type="submit">Agregar Insumos</button>
-        </form>
         <?php if (!empty($categoria_filtro)): ?>
     <h2>Lista de insumos: <?= htmlspecialchars($categoria_filtro) ?></h2>
         <?php endif; ?>

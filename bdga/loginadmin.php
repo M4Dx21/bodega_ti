@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
 <head>
     <link rel="stylesheet" href="asset/styles.css">
     <meta charset="UTF-8">
-    <title>Login administracion de insumos del Hospital Clinico Félix Bulnes</title>
+    <title>Login administración de insumos del Hospital Clínico Félix Bulnes</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
@@ -139,17 +139,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
         </div>
 
         <form method="POST" action="" onsubmit="validarFormulario(event)">
-            <input type="text" name="rut" placeholder="RUT(con guión)" required id="rut" onblur="validarRUTInput()" oninput="limpiarRut()">
+            <input type="text" name="rut" placeholder="RUT (con guion)" required id="rut" onblur="validarRUTInput()" oninput="limpiarRut()">
             <input type="password" name="pass" placeholder="Contraseña" required>
             <button type="submit" name="solicitar">INGRESAR</button>
         </form>
     </div>
 
     <style>
+        .container {
+            padding: 20px;       
+            width: 30%;    
+            margin: 300px auto 0 auto;
+            border-radius: 15px; 
+            background-color:rgb(255, 255, 255);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            padding: 30px 10px;           
+            width: 70%;              
+            margin: 3px auto 0 auto; 
+            border-radius: 15px; 
+            background-color: #e8f0fe;
+            box-shadow: 0 0 15px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+
         .error-message {
             color: red;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
+            background-color:rgb(255, 255, 255);
+            border: 1px solidrgb(255, 255, 255);
             padding: 10px;
             border-radius: 5px;
             margin-bottom: 15px;

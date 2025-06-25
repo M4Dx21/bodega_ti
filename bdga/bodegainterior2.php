@@ -64,6 +64,48 @@ if (isset($_GET['query'])) {
     <title>Administración de Insumos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
+
+            .btn-accion {
+                font-size: 10px;
+                padding: 3px 6px;
+                margin-right: 3px;
+                border: none;
+                border-radius: 3px;
+                background-color: #007bff;
+                color: white;
+                text-decoration: none;
+                display: inline-block;
+                transition: background-color 0.2s;
+            }
+
+            .btn-accion:hover {
+                background-color: #0056b3;
+            }
+
+            .btn-eliminar {
+                background-color: #dc3545;
+            }
+
+            .btn-eliminar:hover {
+                background-color: #a71d2a;
+            }
+
+            .btn-ver {
+                background-color: #28a745;
+            }
+
+            .btn-ver:hover {
+                background-color: #1e7e34;
+            }
+
+            .btn-acciones-group {
+                display: flex;
+                flex-direction: row;
+                gap: 3px;
+                justify-content: center;
+                align-items: center;
+                flex-wrap: wrap;
+            }
             .botones-filtros {
                 display: flex;
                 align-items: center;
@@ -148,33 +190,47 @@ if (isset($_GET['query'])) {
                 </div>
                 </form>
              </div>
-        <form action="agregarcomp.php" method="post">
-            <button type="submit">Agregar Insumos</button>
-        </form>
             <?php if (!empty($modelo_filtro)): ?>
                 <h2>Lista de insumos: <?= htmlspecialchars($modelo_filtro) ?></h2>
             <?php endif; ?>
         <?php if (!empty($personas_dentro)): ?>
-                <table>
+            <table>
+                <tr>
+                    <th>Código</th>
+                    <th>Modelo</th>
+                    <th>Stock</th>
+                    <th>Categoria</th>
+                    <th>Marca</th>
+                    <th>Ubicacion</th>
+                    <th>Ingreso</th>
+                    <th>Garantia</th>
+                    <th>Observaciones</th>
+                    <th>Acciones</th>
+                        <!--   <th>QR</th> -->   
+                </tr>
+                <?php foreach ($personas_dentro as $componente): ?>
                     <tr>
-                        <th>Numero de serie</th>
-                        <th>Modelo (Insumo)</th>
-                        <th>Marca</th>
-                        <th>Estado</th>
-                        <th>Ubicación</th>
-                        <th>Último ingreso</th>
+                        <td><?= htmlspecialchars($componente['codigo']) ?></td>
+                        <td><?= htmlspecialchars($componente['insumo']) ?></td>
+                        <td><?= htmlspecialchars($componente['stock']) ?></td>
+                        <td><?= htmlspecialchars($componente['categoria']) ?></td>
+                        <td><?= htmlspecialchars($componente['marca']) ?></td>
+                        <td><?= htmlspecialchars($componente['ubicacion']) ?></td>
+                        <td><?= date('d-m-y', strtotime($componente['fecha_ingreso'])) ?></td>
+                        <td><?= date('d-m-y', strtotime($componente['garantia'])) ?></td>
+                        <td><?= htmlspecialchars($componente['observaciones']) ?></td>
+                        <td class="btn-acciones-group">
+                            <a href="?editar=<?= $componente['id'] ?>" class="btn-accion">Editar</a>
+                            <a href="?eliminar=<?= $componente['id'] ?>" class="btn-accion btn-eliminar" onclick="return confirm('¿Estás seguro de eliminar este componente?');">Eliminar</a>
+                            <a href="?comprobante=<?= $componente['id'] ?>" class="btn-accion btn-ver">Comprobante</a>
+                        </td>
+                        <!--        <td>
+                                    <button onclick="generarCodigoBarras('<?= htmlspecialchars($componente['codigo']) ?>', 'barcode_<?= $componente['id'] ?>')">Generar Código</button>
+                                    <svg id="barcode_<?= $componente['id'] ?>" style="margin-top:5px;"></svg>
+                                    </td>  -->   
                     </tr>
-                    <?php foreach ($personas_dentro as $componente): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($componente['codigo']) ?></td>
-                            <td><?= htmlspecialchars($componente['insumo']) ?></td>
-                            <td><?= htmlspecialchars($componente['marca']) ?></td>
-                            <td><?= htmlspecialchars($componente['estado']) ?></td>
-                            <td><?= htmlspecialchars($componente['ubicacion']) ?></td>
-                            <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </table>
+                <?php endforeach; ?>
+            </table>
             <form method="GET" style="margin-bottom: 10px;">
                 <label for="cantidad">Mostrar:</label>
                 <select name="cantidad" onchange="this.form.submit()">
