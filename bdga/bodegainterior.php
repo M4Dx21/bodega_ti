@@ -151,12 +151,12 @@ if (isset($_GET['query'])) {
                 </div>
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
-                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
+                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodegainterior.php'">Limpiar Filtros</button>
                 </div>
                 </form>
         </div>
         <?php if (!empty($categoria_filtro)): ?>
-    <h2>Lista de insumos: <?= htmlspecialchars($categoria_filtro) ?></h2>
+    <h2><?= htmlspecialchars($categoria_filtro) ?></h2>
         <?php endif; ?>
         <?php if (!empty($personas_dentro)): ?>
                 <table>

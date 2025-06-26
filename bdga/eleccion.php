@@ -83,8 +83,12 @@ if ($insumosBajos !== false && !empty($insumosBajos)) {
                 Control de bodega
             </button>
 
-            <button class="btn" onclick="window.location.href='peticiones.php'">
-                Historial de Salida
+            <button class="btn-dashboard" id="dashboardBtn">
+                <i class="fas fa-chart-line"></i> Exportar Excel
+            </button>
+
+            <button class="btn" onclick="window.location.href='historiale.php'">
+                Historial de Entrada
             </button>
 
                     <div style="position: relative; display: inline-block;">
@@ -95,7 +99,7 @@ if ($insumosBajos !== false && !empty($insumosBajos)) {
                                 <span class="alert-badge"><?= count($insumosBajos) ?></span>
                             <?php endif; ?>
                         </button>
-                        
+                
                         <div class="alert-panel" id="alertPanel">
                             <?php if (!empty($insumosBajos)): ?>
                                 <h5 style="margin-top: 0; color: #721c24;">
@@ -117,9 +121,9 @@ if ($insumosBajos !== false && !empty($insumosBajos)) {
                             <?php endif; ?>
                         </div>
                     </div>
-
-            <button class="btn-dashboard" id="dashboardBtn">
-                <i class="fas fa-chart-line"></i> Dashboard
+            
+            <button class="btn" onclick="window.location.href='historials.php'">
+                Historial de Salida
             </button>
         </div>
     </div>

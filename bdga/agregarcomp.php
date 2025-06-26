@@ -61,6 +61,7 @@ if (isset($_POST['agregar'])) {
     $formato = $_POST["marca"];
     $estado = $_POST["estado"];
     $ubicacion = $_POST["ubicacion"];
+    $caracteristicas = $_POST["caracteristicas"];
     $observaciones = $_POST["observaciones"];
     $garantia = $_POST["garantia"];
     $fecha_ingreso = date('Y-m-d H:i:s');
@@ -77,14 +78,15 @@ if (isset($_POST['agregar'])) {
                     estado = '$estado', 
                     ubicacion = '$ubicacion',
                     observaciones = '$observaciones', 
+                    caracteristicas = '$caracteristicas',
                     fecha_ingreso = '$fecha_ingreso',
                     garantia = '$garantia'
                    WHERE codigo = '$codigo'";
         mysqli_query($conn, $update);
         $mensaje = "Insumo actualizado correctamente.";
     } else {
-        $insert = "INSERT INTO componentes (codigo, insumo, stock, categoria, marca, estado, ubicacion, observaciones, fecha_ingreso, garantia, comprobante) 
-           VALUES ('$codigo', '$nombre', '$stock', '$especialidad', '$formato', '$estado', '$ubicacion', '$observaciones', '$fecha_ingreso', '$garantia', " . ($archivo_nombre ? "'$archivo_nombre'" : "NULL") . ")";
+        $insert = "INSERT INTO componentes (codigo, insumo, stock, categoria, marca, estado, ubicacion, observaciones, fecha_ingreso, caracteristicas, garantia, comprobante) 
+           VALUES ('$codigo', '$nombre', '$stock', '$especialidad', '$formato', '$estado', '$ubicacion', '$observaciones', '$fecha_ingreso', '$caracteristicas', '$garantia', " . ($archivo_nombre ? "'$archivo_nombre'" : "NULL") . ")";
         mysqli_query($conn, $insert);
         $mensaje = "Insumo agregado correctamente.";
     }
@@ -106,50 +108,6 @@ if (isset($_POST['agregar'])) {
     }
 
     header("Location: " . $_SERVER['PHP_SELF'] . "?mensaje=" . urlencode($mensaje));
-    exit();
-}
-
-if (isset($_GET['eliminar'])) {
-    $id = $_GET['eliminar'];
-    mysqli_query($conn, "DELETE FROM componentes WHERE id = $id");
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit();
-}
-
-if (isset($_GET['editar'])) {
-    $editando = true;
-    $id = $_GET['editar'];
-    $resultado = mysqli_query($conn, "SELECT * FROM componentes WHERE id = $id");
-    $componente_edit = mysqli_fetch_assoc($resultado);
-}
-
-if (isset($_POST['guardar_cambios'])) {
-    $id = $_POST["id"];
-    $nombre = $_POST["insumo"];
-    $codigo = $_POST["codigo"];
-    $cantidad = $_POST["stock"];
-    $especialidad = $_POST["categoria"];
-    $formato = $_POST["marca"];
-    $estado = $_POST["estado"];
-    $ubicacion = $_POST["ubicacion"];
-    $observaciones = $_POST["observaciones"];
-    $garantia = $_POST["garantia"];
-    $fecha_ingreso = date('Y-m-d H:i:s');
-
-    $update = "UPDATE componentes SET 
-            insumo = '$nombre', 
-            stock = stock + $cantidad, 
-            categoria = '$especialidad', 
-            marca = '$formato', 
-            estado = '$estado', 
-            ubicacion = '$ubicacion',
-            observaciones = '$observaciones', 
-            fecha_ingreso = '$fecha_ingreso',
-            garantia = '$garantia' ".
-            ($archivo_nombre ? ", comprobante = '$archivo_nombre'" : "") . "
-           WHERE codigo = '$codigo'";
-    mysqli_query($conn, $update);
-    header("Location: " . $_SERVER['PHP_SELF']);
     exit();
 }
 
@@ -181,7 +139,7 @@ if ($result->num_rows > 0) {
             <p><strong>Usuario: </strong><?php echo $_SESSION['nombre']; ?></p>
             <form action="logout.php" method="POST">
                 <button type="submit" class="logout-btn">Salir</button>
-                <button type="button" class="volver-btn" onclick="window.location.href='bodega.php'">Volver</button>
+                <button type="button" class="volver-btn" onclick="window.location.href='eleccion.php'">Volver</button>
             </form>
         </div>
     </div>
@@ -191,21 +149,6 @@ if ($result->num_rows > 0) {
 </head>
 <body>
     <div class="container">
-        <div class="filters">
-            <form method="GET" action="">
-                <label for="codigo">Insumo:</label>
-                <div class="input-sugerencias-wrapper">
-                    <input type="text" id="filtro_codigo" name="filtro_codigo" autocomplete="off"
-                        placeholder="Escribe el insumo para buscar..."
-                        value="<?php echo htmlspecialchars($nombre_usuario_filtro); ?>">
-                    <div id="sugerencias" class="sugerencias-box"></div>
-                </div>
-                <div class="botones-filtros">
-                    <button type="submit">Filtrar</button>
-                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='agregarcomp.php'">Limpiar Filtros</button>
-                </div>
-            </form>
-        </div>
         <div id="mensaje-container">
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>
@@ -233,6 +176,8 @@ if ($result->num_rows > 0) {
                 value="<?= $editando ? $componente_edit['insumo'] : '' ?>">
             <input type="number" name="stock" placeholder="Cantidad" required
                 value="<?= $editando ? $componente_edit['stock'] : '' ?>">
+            <input type="text" name="caracteristicas" placeholder="Caracteristicas del equipo" required
+                value="<?= $editando ? $componente_edit['caracteristicas'] : '' ?>">
             <select name="ubicacion" required>
                 <option value="">Seleccione ubicación</option>
                 <?php foreach ($enum_ubicaciones as $valor): ?>
@@ -272,6 +217,13 @@ if ($result->num_rows > 0) {
         <?php endif; ?>
     </div>
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll('input[type="text"]').forEach(function (input) {
+        input.addEventListener('input', function () {
+        this.value = this.value.toUpperCase();
+        });
+    });
+    });
     document.getElementById('codigo').addEventListener('keydown', function(event) {
     if (event.key === 'Enter') {
         event.preventDefault();

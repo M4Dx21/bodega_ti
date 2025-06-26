@@ -186,12 +186,12 @@ if (isset($_GET['query'])) {
                 </div>
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
-                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
+                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodegainterior2.php'">Limpiar Filtros</button>
                 </div>
                 </form>
              </div>
             <?php if (!empty($modelo_filtro)): ?>
-                <h2>Lista de insumos: <?= htmlspecialchars($modelo_filtro) ?></h2>
+                <h2><?= htmlspecialchars($modelo_filtro) ?></h2>
             <?php endif; ?>
         <?php if (!empty($personas_dentro)): ?>
             <table>
@@ -201,6 +201,7 @@ if (isset($_GET['query'])) {
                     <th>Stock</th>
                     <th>Categoria</th>
                     <th>Marca</th>
+                    <th>Estado</th>
                     <th>Ubicacion</th>
                     <th>Ingreso</th>
                     <th>Garantia</th>
@@ -215,6 +216,7 @@ if (isset($_GET['query'])) {
                         <td><?= htmlspecialchars($componente['stock']) ?></td>
                         <td><?= htmlspecialchars($componente['categoria']) ?></td>
                         <td><?= htmlspecialchars($componente['marca']) ?></td>
+                        <td><?= htmlspecialchars($componente['estado']) ?></td>
                         <td><?= htmlspecialchars($componente['ubicacion']) ?></td>
                         <td><?= date('d-m-y', strtotime($componente['fecha_ingreso'])) ?></td>
                         <td><?= date('d-m-y', strtotime($componente['garantia'])) ?></td>
