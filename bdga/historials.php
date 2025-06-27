@@ -1,3 +1,5 @@
+<!-- en esta es necesario tener un control de las cosas que sacan de la bodega, incluida la fecha de salida y los datos del pc o insumo que se saca-->
+
 <?php
 session_start();
 include 'db.php';
@@ -40,6 +42,7 @@ if (isset($_GET['query'])) {
     echo json_encode($suggestions);
     exit();
 }
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["aceptar"])) {
     $id = $_POST["id"]; 
 

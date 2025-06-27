@@ -1,6 +1,7 @@
 <?php
 include 'db.php';
 session_start();
+date_default_timezone_set('America/Santiago');
 
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
 $sql_base = "FROM componentes WHERE 1";
@@ -54,60 +55,100 @@ $enum_formatos = obtenerValoresEnum($conn, 'componentes', 'estado');
 $enum_ubicaciones = obtenerValoresEnum($conn, 'componentes', 'ubicacion');
 
 if (isset($_POST['agregar'])) {
-    $nombre = $_POST["insumo"];
-    $codigo = $_POST["codigo"];
-    $stock = $_POST["stock"];
-    $especialidad = $_POST["categoria"];
-    $formato = $_POST["marca"];
-    $estado = $_POST["estado"];
-    $ubicacion = $_POST["ubicacion"];
-    $caracteristicas = $_POST["caracteristicas"];
-    $observaciones = $_POST["observaciones"];
-    $garantia = $_POST["garantia"];
-    $fecha_ingreso = date('Y-m-d H:i:s');
 
-    $consulta_existente = "SELECT * FROM componentes WHERE codigo = '$codigo'";
-    $resultado_existente = mysqli_query($conn, $consulta_existente);
-
-    if (mysqli_num_rows($resultado_existente) > 0) {
-        $update = "UPDATE componentes SET 
-                    insumo = '$nombre', 
-                    stock = stock + $stock, 
-                    categoria = '$especialidad', 
-                    marca = '$formato', 
-                    estado = '$estado', 
-                    ubicacion = '$ubicacion',
-                    observaciones = '$observaciones', 
-                    caracteristicas = '$caracteristicas',
-                    fecha_ingreso = '$fecha_ingreso',
-                    garantia = '$garantia'
-                   WHERE codigo = '$codigo'";
-        mysqli_query($conn, $update);
-        $mensaje = "Insumo actualizado correctamente.";
-    } else {
-        $insert = "INSERT INTO componentes (codigo, insumo, stock, categoria, marca, estado, ubicacion, observaciones, fecha_ingreso, caracteristicas, garantia, comprobante) 
-           VALUES ('$codigo', '$nombre', '$stock', '$especialidad', '$formato', '$estado', '$ubicacion', '$observaciones', '$fecha_ingreso', '$caracteristicas', '$garantia', " . ($archivo_nombre ? "'$archivo_nombre'" : "NULL") . ")";
-        mysqli_query($conn, $insert);
-        $mensaje = "Insumo agregado correctamente.";
-    }
     $archivo_nombre = null;
+    $mensaje_archivo = '';
 
-    if (isset($_FILES['documento']) && $_FILES['documento']['error'] == UPLOAD_ERR_OK) {
-        $permitidos = ['pdf', 'doc', 'docx'];
-        $nombre_original = $_FILES['documento']['name'];
-        $ext = pathinfo($nombre_original, PATHINFO_EXTENSION);
-        
-        if (in_array(strtolower($ext), $permitidos)) {
-            $archivo_nombre = uniqid("comprobante_") . '.' . $ext;
-            move_uploaded_file($_FILES['documento']['tmp_name'], 'comprobantes/' . $archivo_nombre);
+    if (isset($_FILES['comprobante']) && $_FILES['comprobante']['error'] === UPLOAD_ERR_OK) {
+        $permitidos = ['pdf', 'doc', 'docx', 'xlsx', 'xls', 'jpg', 'png'];
+        $nombre_original = $_FILES['comprobante']['name'];
+        $ext = strtolower(pathinfo($nombre_original, PATHINFO_EXTENSION));
+
+        if (in_array($ext, $permitidos)) {
+            $destino_carpeta = __DIR__ . '/comprobantes/';
+            if (!is_dir($destino_carpeta)) mkdir($destino_carpeta, 0775, true);
+
+            $archivo_nombre = uniqid('comprobante_') . '.' . $ext;
+
+            if (!move_uploaded_file($_FILES['comprobante']['tmp_name'], $destino_carpeta . $archivo_nombre)) {
+                $mensaje_archivo = 'Error al mover el archivo.';
+                $archivo_nombre = null;
+            }
         } else {
-            $mensaje = "Tipo de archivo no permitido.";
-            header("Location: " . $_SERVER['PHP_SELF'] . "?mensaje=" . urlencode($mensaje));
-            exit();
+            $mensaje_archivo = 'Tipo de archivo no permitido.';
         }
     }
 
-    header("Location: " . $_SERVER['PHP_SELF'] . "?mensaje=" . urlencode($mensaje));
+    $nombre         = $_POST['insumo'];
+    $codigo         = $_POST['codigo'];
+    $stock          = $_POST['stock'];
+    $especialidad   = $_POST['categoria'];
+    $formato        = $_POST['marca'];
+    $estado         = $_POST['estado'];
+    $ubicacion      = $_POST['ubicacion'];
+    $caracteristicas= $_POST['caracteristicas'];
+    $observaciones  = $_POST['observaciones'];
+    $garantia       = $_POST['garantia'];
+    $fecha_ingreso  = date('Y-m-d H:i:s');
+
+    $consulta_existente = "SELECT 1 FROM componentes WHERE codigo = ?";
+    $stmt = mysqli_prepare($conn, $consulta_existente);
+    mysqli_stmt_bind_param($stmt, 's', $codigo);
+    mysqli_stmt_execute($stmt);
+    $existe = mysqli_stmt_get_result($stmt)->num_rows > 0;
+    mysqli_stmt_close($stmt);
+
+    if ($existe) {
+        $sql = "UPDATE componentes 
+                   SET insumo = ?, stock = stock + ?, categoria = ?, marca = ?, estado = ?,
+                       ubicacion = ?, observaciones = ?, caracteristicas = ?, fecha_ingreso = ?, garantia = ?"
+                 . ($archivo_nombre ? ", comprobante = ?" : "")
+               . " WHERE codigo = ?";
+
+        $stmt = mysqli_prepare($conn, $sql);
+
+        if ($archivo_nombre) {
+            mysqli_stmt_bind_param(
+                $stmt,
+                'sisssssssss',
+                $nombre, $stock, $especialidad, $formato, $estado,
+                $ubicacion, $observaciones, $caracteristicas, $fecha_ingreso, $garantia,
+                $archivo_nombre,
+                $codigo
+            );
+        } else {
+            mysqli_stmt_bind_param(
+                $stmt,
+                'sissssssss',
+                $nombre, $stock, $especialidad, $formato, $estado,
+                $ubicacion, $observaciones, $caracteristicas, $fecha_ingreso, $garantia,
+                $codigo
+            );
+        }
+
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        $mensaje = 'Insumo actualizado correctamente.';
+    } else {
+        $sql = "INSERT INTO componentes
+                (codigo, insumo, stock, categoria, marca, estado, ubicacion, observaciones,
+                 fecha_ingreso, caracteristicas, garantia, comprobante)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param(
+            $stmt,
+            'ssisssssssss',
+            $codigo, $nombre, $stock, $especialidad, $formato, $estado, $ubicacion,
+            $observaciones, $fecha_ingreso, $caracteristicas, $garantia, $archivo_nombre
+        );
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        $mensaje = 'Insumo agregado correctamente.';
+    }
+
+    $mensaje_final = $mensaje_archivo ? $mensaje_archivo : $mensaje;
+    header('Location: ' . $_SERVER['PHP_SELF'] . '?mensaje=' . urlencode($mensaje_final));
     exit();
 }
 
@@ -239,16 +280,6 @@ if ($result->num_rows > 0) {
         }
     });
 
-    function generarCodigoBarras(codigo, elementoId) {
-        JsBarcode("#" + elementoId, codigo, {
-            format: "code128",
-            lineColor: "#0aa",
-            width: 2,
-            height: 40,
-            displayValue: true
-        });
-    }
-
     function toggleExcelForm() {
         const form = document.getElementById("excelFormContainer");
         form.style.display = form.style.display === "none" ? "block" : "none";
@@ -297,53 +328,55 @@ if ($result->num_rows > 0) {
         buscarComponente(codigo);
     }
     });
-            document.addEventListener("DOMContentLoaded", function() {
-            const input = document.getElementById("codigo");
-            const sugerenciasBox = document.getElementById("sugerencias");
 
-            input.addEventListener("input", function() {
-                const query = input.value;
+    document.addEventListener("DOMContentLoaded", function() {
+    const input = document.getElementById("codigo");
+    const sugerenciasBox = document.getElementById("sugerencias");
 
-                if (query.length < 2) {
-                    sugerenciasBox.innerHTML = "";
+    input.addEventListener("input", function() {
+        const query = input.value;
+
+        if (query.length < 2) {
+            sugerenciasBox.innerHTML = "";
+            sugerenciasBox.style.display = "none";
+            return;
+        }
+
+        fetch(`agregarcomp.php?query=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(data => {
+                sugerenciasBox.innerHTML = "";
+                if (data.length === 0) {
                     sugerenciasBox.style.display = "none";
                     return;
                 }
 
-                fetch(`agregarcomp.php?query=${encodeURIComponent(query)}`)
-                    .then(res => res.json())
-                    .then(data => {
+                data.forEach(item => {
+                    const div = document.createElement("div");
+                    div.textContent = item;
+                    div.addEventListener("click", () => {
+                        input.value = item.split(" - ")[0];
                         sugerenciasBox.innerHTML = "";
-                        if (data.length === 0) {
-                            sugerenciasBox.style.display = "none";
-                            return;
-                        }
-
-                        data.forEach(item => {
-                            const div = document.createElement("div");
-                            div.textContent = item;
-                            div.addEventListener("click", () => {
-                                input.value = item.split(" - ")[0];
-                                sugerenciasBox.innerHTML = "";
-                                sugerenciasBox.style.display = "none";
-                            });
-                            sugerenciasBox.appendChild(div);
-                        });
-                        sugerenciasBox.style.display = "block";
+                        sugerenciasBox.style.display = "none";
                     });
+                    sugerenciasBox.appendChild(div);
+                });
+                sugerenciasBox.style.display = "block";
             });
+    });
 
-        document.addEventListener("click", function(e) {
-                if (!sugerenciasBox.contains(e.target) && e.target !== input) {
-                    sugerenciasBox.style.display = "none";
-                }
-            });
+    document.addEventListener("click", function(e) {
+            if (!sugerenciasBox.contains(e.target) && e.target !== input) {
+                sugerenciasBox.style.display = "none";
+            }
         });
-        
-        document.getElementById('comprobante').addEventListener('change', function() {
-            const fileName = this.files.length > 0 ? this.files[0].name : 'Ningún archivo seleccionado';
-            document.getElementById('file-name').textContent = fileName;
-        });
+    });
+    
+    document.getElementById('comprobante').addEventListener('change', function() {
+        const fileName = this.files.length > 0 ? this.files[0].name : 'Ningún archivo seleccionado';
+        document.getElementById('file-name').textContent = fileName;
+    });
+
 </script>
 <style>
     .btn-accion {
