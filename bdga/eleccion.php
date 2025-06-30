@@ -83,9 +83,9 @@ if ($insumosBajos !== false && !empty($insumosBajos)) {
                 Control de bodega
             </button>
 
-            <button class="btn-dashboard" id="dashboardBtn">
-                <i class="fas fa-chart-line"></i> Exportar Excel
-            </button>
+            <form action="exportar_excel.php" method="post">
+                <button class="btn" type="submit">📤 Exportar a Excel</button>
+            </form>
 
             <button class="btn" onclick="window.location.href='historiale.php'">
                 Historial de Entrada

@@ -5,6 +5,8 @@ date_default_timezone_set('America/Santiago');
 
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
 $sql_base = "FROM componentes WHERE 1";
+$editando = false;
+$componente_edit = null;
 
 if (!empty($nombre_usuario_filtro)) {
     $sql_base .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
@@ -152,6 +154,77 @@ if (isset($_POST['agregar'])) {
     exit();
 }
 
+if (isset($_GET['editar'])) {
+    $editando = true;
+    $id = (int)$_GET['editar'];
+
+    $stmt = $conn->prepare("SELECT * FROM componentes WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+    $componente_edit = $resultado->fetch_assoc();
+    $stmt->close();
+}
+
+if (isset($_POST['guardar_cambios'])) {
+    $id             = $_POST["id"];
+    $nombre         = $_POST["insumo"];
+    $codigo         = $_POST["codigo"];
+    $cantidad       = $_POST["stock"];
+    $especialidad   = $_POST["categoria"];
+    $formato        = $_POST["marca"];
+    $estado         = $_POST["estado"];
+    $ubicacion      = $_POST["ubicacion"];
+    $observaciones  = $_POST["observaciones"];
+    $garantia       = $_POST["garantia"];
+    $fecha_ingreso  = date('Y-m-d H:i:s');
+
+    $archivo_nombre = null;
+
+    if (isset($_FILES['comprobante']) && $_FILES['comprobante']['error'] === UPLOAD_ERR_OK) {
+        $permitidos = ['pdf', 'doc', 'docx', 'xlsx', 'xls', 'jpg', 'png'];
+        $nombre_original = $_FILES['comprobante']['name'];
+        $ext = strtolower(pathinfo($nombre_original, PATHINFO_EXTENSION));
+
+        if (in_array($ext, $permitidos)) {
+            $destino_carpeta = __DIR__ . '/comprobantes/';
+            if (!is_dir($destino_carpeta)) mkdir($destino_carpeta, 0775, true);
+
+            $archivo_nombre = uniqid('comprobante_') . '.' . $ext;
+            move_uploaded_file($_FILES['comprobante']['tmp_name'], $destino_carpeta . $archivo_nombre);
+        }
+    }
+
+    if ($archivo_nombre) {
+        $stmt = $conn->prepare("UPDATE componentes SET
+            insumo = ?, stock = stock + ?, categoria = ?, marca = ?, estado = ?, ubicacion = ?,
+            observaciones = ?, fecha_ingreso = ?, garantia = ?, comprobante = ?
+            WHERE id = ?");
+        $stmt->bind_param(
+            "sissssssssi",
+            $nombre, $cantidad, $especialidad, $formato, $estado, $ubicacion,
+            $observaciones, $fecha_ingreso, $garantia, $archivo_nombre, $id
+        );
+    } else {
+        $stmt = $conn->prepare("UPDATE componentes SET
+            insumo = ?, stock = stock + ?, categoria = ?, marca = ?, estado = ?, ubicacion = ?,
+            observaciones = ?, fecha_ingreso = ?, garantia = ?
+            WHERE id = ?");
+        $stmt->bind_param(
+            "sisssssssi",
+            $nombre, $cantidad, $especialidad, $formato, $estado, $ubicacion,
+            $observaciones, $fecha_ingreso, $garantia, $id
+        );
+    }
+
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: agregarcomp.php?mensaje=editado");
+    exit();
+}
+
+
 $sql = "SELECT * FROM componentes";
 $result = $conn->query($sql);
 $solicitudes_result = [];
@@ -203,56 +276,68 @@ if ($result->num_rows > 0) {
                 <button type="button" onclick="toggleExcelForm()">Cancelar</button>
             </form>
         </div>
-        <form action="" method="post" enctype="multipart/form-data">
-            <?php if ($editando): ?>
-                <input type="hidden" name="id" value="<?= $componente_edit['id'] ?>">
-            <?php endif; ?>
-            <input type="text" id="codigo" name="codigo" placeholder="Número de serie"
-                value="<?= $editando ? $componente_edit['codigo'] : '' ?>" autofocus>
-            <input type="text" name="categoria" placeholder="Categoria" required
-                value="<?= $editando ? $componente_edit['categoria'] : '' ?>">
-            <input type="text" name="marca" placeholder="Marca" required
-                value="<?= $editando ? $componente_edit['marca'] : '' ?>">
-            <input type="text" name="insumo" placeholder="Modelo" required
-                value="<?= $editando ? $componente_edit['insumo'] : '' ?>">
-            <input type="number" name="stock" placeholder="Cantidad" required
-                value="<?= $editando ? $componente_edit['stock'] : '' ?>">
-            <input type="text" name="caracteristicas" placeholder="Caracteristicas del equipo" required
-                value="<?= $editando ? $componente_edit['caracteristicas'] : '' ?>">
-            <select name="ubicacion" required>
-                <option value="">Seleccione ubicación</option>
-                <?php foreach ($enum_ubicaciones as $valor): ?>
-                    <option value="<?= $valor ?>" <?= $editando && $componente_edit['ubicacion'] == $valor ? 'selected' : '' ?>>
-                        <?= htmlspecialchars(ucfirst($valor)) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <select name="estado" required>
-                <option value="">Seleccione Estado</option>
-                <?php foreach ($enum_formatos as $valor): ?>
-                    <option value="<?= $valor ?>" <?= $editando && $componente_edit['estado'] == $valor ? 'selected' : '' ?>>
-                        <?= htmlspecialchars(ucfirst($valor)) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <input type="date" name="garantia" placeholder="Fecha de Caducidad de garantia" required
-                value="<?= $editando ? $componente_edit['garantia'] : '' ?>">
-            <div class="file-upload-wrapper">
-                <label for="comprobante" class="file-upload-label">
-                    <i class="fas fa-file-upload"></i> Adjuntar Comprobante (PDF, Word, etc.)
-                </label>
-                <input type="file" name="comprobante" id="comprobante" class="file-upload-input" accept=".pdf,.doc,.docx,.xlsx,.xls,.jpg,.png">
-                <span id="file-name" class="file-name-placeholder">Ningún archivo seleccionado</span>
-            </div>
-            <input type="text" id="observaciones" name="observaciones" placeholder="Observaciones"
-                value="<?= $editando ? $componente_edit['observaciones'] : '' ?>" autofocus>
-            <?php if ($editando): ?>
-                <button type="submit" name="guardar_cambios">Guardar Cambios</button>
-                <a href="<?= $_SERVER['PHP_SELF'] ?>">Cancelar</a>
-            <?php else: ?>
-                <button type="submit" name="agregar">Agregar Insumos</button>
-            <?php endif; ?>
-        </form>
+            <form action="" method="post" enctype="multipart/form-data">
+                <?php if ($editando): ?>
+                    <input type="hidden" name="id" value="<?= $componente_edit['id'] ?>">
+                <?php endif; ?>
+                
+                <input type="text" id="codigo" name="codigo" placeholder="Número de serie"
+                    value="<?= $editando ? htmlspecialchars($componente_edit['codigo']) : '' ?>" autofocus>
+
+                <input type="text" name="categoria" placeholder="Categoria" required
+                    value="<?= $editando ? htmlspecialchars($componente_edit['categoria']) : '' ?>">
+
+                <input type="text" name="marca" placeholder="Marca" required
+                    value="<?= $editando ? htmlspecialchars($componente_edit['marca']) : '' ?>">
+
+                <input type="text" name="insumo" placeholder="Modelo" required
+                    value="<?= $editando ? htmlspecialchars($componente_edit['insumo']) : '' ?>">
+
+                <input type="number" name="stock" placeholder="Cantidad" required
+                    value="<?= $editando ? htmlspecialchars($componente_edit['stock']) : '' ?>">
+
+                <input type="text" name="caracteristicas" placeholder="Caracteristicas del equipo" required
+                    value="<?= $editando ? htmlspecialchars($componente_edit['caracteristicas']) : '' ?>">
+
+                <select name="ubicacion" required>
+                    <option value="">Seleccione ubicación</option>
+                    <?php foreach ($enum_ubicaciones as $valor): ?>
+                        <option value="<?= $valor ?>" <?= $editando && $componente_edit['ubicacion'] == $valor ? 'selected' : '' ?>>
+                            <?= htmlspecialchars(ucfirst($valor)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <select name="estado" required>
+                    <option value="">Seleccione Estado</option>
+                    <?php foreach ($enum_formatos as $valor): ?>
+                        <option value="<?= $valor ?>" <?= $editando && $componente_edit['estado'] == $valor ? 'selected' : '' ?>>
+                            <?= htmlspecialchars(ucfirst($valor)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <input type="date" name="garantia" placeholder="Fecha de Caducidad de garantia" required
+                    value="<?= $editando ? htmlspecialchars($componente_edit['garantia']) : '' ?>">
+
+                <div class="file-upload-wrapper">
+                    <label for="comprobante" class="file-upload-label">
+                        <i class="fas fa-file-upload"></i> Adjuntar Comprobante (PDF, Word, etc.)
+                    </label>
+                    <input type="file" name="comprobante" id="comprobante" class="file-upload-input" accept=".pdf,.doc,.docx,.xlsx,.xls,.jpg,.png">
+                    <span id="file-name" class="file-name-placeholder">Ningún archivo seleccionado</span>
+                </div>
+
+                <input type="text" id="observaciones" name="observaciones" placeholder="Observaciones"
+                    value="<?= $editando ? htmlspecialchars($componente_edit['observaciones']) : '' ?>">
+
+                <?php if ($editando): ?>
+                    <button type="submit" name="guardar_cambios">Guardar Cambios</button>
+                    <a href="<?= $_SERVER['PHP_SELF'] ?>">Cancelar</a>
+                <?php else: ?>
+                    <button type="submit" name="agregar">Agregar Insumos</button>
+                <?php endif; ?>
+            </form>
                 <?php if (isset($_GET['importado'])): ?>
             <div id="success-msg">¡Archivo importado correctamente!</div>
         <?php endif; ?>

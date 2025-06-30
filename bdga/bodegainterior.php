@@ -3,11 +3,11 @@ session_start();
 include 'db.php';
 include 'funciones.php';
 
-$categoria_filtro = isset($_GET['categoria']) ? $conn->real_escape_string($_GET['categoria']) : '';
+$categoria_filtro = isset($_GET['categoria']) ? $conn->real_escape_string(trim($_GET['categoria'])) : '';
 $sql_base = "FROM componentes WHERE 1";
 
 if (!empty($categoria_filtro)) {
-    $sql_base .= " AND categoria = '$categoria_filtro'";
+    $sql_base .= " AND categoria LIKE '%$categoria_filtro%'";
 }
 
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
@@ -146,14 +146,24 @@ if (isset($_GET['query'])) {
                 <div class="input-sugerencias-wrapper">
                     <input type="text" id="codigo" name="codigo" autocomplete="off"
                         placeholder="Escribe el insumo para buscar..."
-                        value="<?php echo htmlspecialchars($nombre_usuario_filtro); ?>">
+                        value="<?= htmlspecialchars($nombre_usuario_filtro) ?>">
                     <div id="sugerencias" class="sugerencias-box"></div>
                 </div>
+
+                <?php if ($categoria_filtro !== ''): ?>
+                    <input type="hidden" name="categoria"
+                        value="<?= htmlspecialchars($categoria_filtro) ?>">
+                <?php endif; ?>
+
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
-                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodegainterior.php'">Limpiar Filtros</button>
+
+                    <button type="button" class="limpiar-filtros-btn"
+                            onclick="window.location='bodegainterior.php<?= $categoria_filtro !== '' ? '?categoria=' . urlencode($categoria_filtro) : '' ?>'">
+                        Limpiar Filtros
+                    </button>
                 </div>
-                </form>
+            </form>
         </div>
         <?php if (!empty($categoria_filtro)): ?>
     <h2><?= htmlspecialchars($categoria_filtro) ?></h2>
@@ -179,7 +189,7 @@ if (isset($_GET['query'])) {
                             <td><?= date('d-m-y H:i', strtotime($componente['fecha_ingreso'])) ?></td>
                             <td>
                                 <form action="bodegainterior2.php" method="GET" style="margin:0;">
-                                    <input type="hidden" name="modelo" value="<?= urlencode(trim($componente['insumo'])) ?>">
+                                    <input type="hidden" name="modelo" value="<?= htmlspecialchars($componente['insumo']) ?>">
                                     <button type="submit" class="btn-dashboard" title="Ver insumos del modelo">
                                         🔍 Ver
                                     </button>
@@ -191,39 +201,60 @@ if (isset($_GET['query'])) {
             <form method="GET" style="margin-bottom: 10px;">
                 <label for="cantidad">Mostrar:</label>
                 <select name="cantidad" onchange="this.form.submit()">
-                    <?php foreach ([10, 20, 30, 40, 50] as $cantidad): ?>
-                        <option value="<?= $cantidad ?>" <?= $cantidad_por_pagina == $cantidad ? 'selected' : '' ?>><?= $cantidad ?></option>
+                    <?php foreach ([10,20,30,40,50] as $cantidad): ?>
+                        <option value="<?= $cantidad ?>"
+                                <?= $cantidad_por_pagina == $cantidad ? 'selected' : '' ?>>
+                            <?= $cantidad ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
+                <?php if ($categoria_filtro !== ''): ?>
+                    <input type="hidden" name="categoria"
+                        value="<?= htmlspecialchars($categoria_filtro) ?>">
+                <?php endif; ?>
+                <?php if ($nombre_usuario_filtro !== ''): ?>
+                    <input type="hidden" name="codigo"
+                        value="<?= htmlspecialchars($nombre_usuario_filtro) ?>">
+                <?php endif; ?>
+
                 <input type="hidden" name="pagina" value="1">
             </form>
             <div class="pagination-container">
                 <?php
+                function enlace($pag, $cant, $cat, $cod = '') {
+                    $qs = [
+                        'pagina'   => $pag,
+                        'cantidad' => $cant
+                    ];
+                    if ($cat !== '') $qs['categoria'] = $cat;
+                    if ($cod !== '') $qs['codigo']    = $cod;
+                    return '?' . http_build_query($qs);
+                }
+
                 $rango_visible = 5;
                 $inicio = max(1, $pagina_actual - floor($rango_visible / 2));
-                $fin = min($total_paginas, $inicio + $rango_visible - 1);
+                $fin    = min($total_paginas, $inicio + $rango_visible - 1);
 
                 if ($inicio > 1) {
-                    echo '<a href="?pagina=1&cantidad=' . $cantidad_por_pagina . '">1</a>';
+                    echo '<a href="'.enlace(1, $cantidad_por_pagina, $categoria_filtro, $nombre_usuario_filtro).'">1</a>';
                     if ($inicio > 2) echo '<span>...</span>';
                 }
 
                 for ($i = $inicio; $i <= $fin; $i++) {
                     $active = $pagina_actual == $i ? 'active' : '';
-                    echo '<a href="?pagina=' . $i . '&cantidad=' . $cantidad_por_pagina . '" class="' . $active . '">' . $i . '</a>';
+                    echo '<a class="'.$active.'" href="'.enlace($i, $cantidad_por_pagina, $categoria_filtro, $nombre_usuario_filtro).'">'.$i.'</a>';
                 }
 
                 if ($fin < $total_paginas) {
                     if ($fin < $total_paginas - 1) echo '<span>...</span>';
-                    echo '<a href="?pagina=' . $total_paginas . '&cantidad=' . $cantidad_por_pagina . '">' . $total_paginas . '</a>';
+                    echo '<a href="'.enlace($total_paginas, $cantidad_por_pagina, $categoria_filtro, $nombre_usuario_filtro).'">'.$total_paginas.'</a>';
                 }
 
                 if ($pagina_actual > 1) {
-                    echo '<a href="?pagina=' . ($pagina_actual - 1) . '&cantidad=' . $cantidad_por_pagina . '">Anterior</a>';
+                    echo '<a href="'.enlace($pagina_actual-1, $cantidad_por_pagina, $categoria_filtro, $nombre_usuario_filtro).'">Anterior</a>';
                 }
-
                 if ($pagina_actual < $total_paginas) {
-                    echo '<a href="?pagina=' . ($pagina_actual + 1) . '&cantidad=' . $cantidad_por_pagina . '">Siguiente</a>';
+                    echo '<a href="'.enlace($pagina_actual+1, $cantidad_por_pagina, $categoria_filtro, $nombre_usuario_filtro).'">Siguiente</a>';
                 }
                 ?>
             </div>

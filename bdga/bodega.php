@@ -117,7 +117,7 @@ if (isset($_GET['query'])) {
                             <td><?= htmlspecialchars($componente['stock']) ?></td>
                             <td>
                                 <form action="bodegainterior.php" method="GET" style="margin: 0;">
-                                    <input type="hidden" name="categoria" value="<?= urlencode($componente['categoria']) ?>">
+                                    <input type="hidden" name="categoria" value="<?= htmlspecialchars($componente['categoria']) ?>">
                                     <button type="submit" class="btn-dashboard" title="Ver insumos de esta categoría">
                                         🔍 Ver
                                     </button>
