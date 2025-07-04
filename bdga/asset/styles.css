@@ -45,6 +45,16 @@ body {
    margin-top: 77px;
 }
 
+.container form > * {
+   margin-bottom: 5px;
+}
+
+.container label {
+   display: block;
+   margin-bottom: 5px;
+   font-weight: bold;
+}
+
 body.index-page .header {
    display: flex;
    justify-content: center;

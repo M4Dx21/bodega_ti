@@ -197,7 +197,7 @@ if (isset($_POST['guardar_cambios'])) {
 
     if ($archivo_nombre) {
         $stmt = $conn->prepare("UPDATE componentes SET
-            insumo = ?, stock = stock + ?, categoria = ?, marca = ?, estado = ?, ubicacion = ?,
+            insumo = ?, stock = ?, categoria = ?, marca = ?, estado = ?, ubicacion = ?,
             observaciones = ?, fecha_ingreso = ?, garantia = ?, comprobante = ?
             WHERE id = ?");
         $stmt->bind_param(
@@ -207,7 +207,7 @@ if (isset($_POST['guardar_cambios'])) {
         );
     } else {
         $stmt = $conn->prepare("UPDATE componentes SET
-            insumo = ?, stock = stock + ?, categoria = ?, marca = ?, estado = ?, ubicacion = ?,
+            insumo = ?, stock = ?, categoria = ?, marca = ?, estado = ?, ubicacion = ?,
             observaciones = ?, fecha_ingreso = ?, garantia = ?
             WHERE id = ?");
         $stmt->bind_param(
@@ -223,7 +223,6 @@ if (isset($_POST['guardar_cambios'])) {
     header("Location: agregarcomp.php?mensaje=editado");
     exit();
 }
-
 
 $sql = "SELECT * FROM componentes";
 $result = $conn->query($sql);
@@ -267,7 +266,7 @@ if ($result->num_rows > 0) {
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>
         <h2><?= $editando ? 'Editar Insumos' : 'Agregar Insumos' ?></h2>
-        <button type="button" onclick="toggleExcelForm()">📂 Importar desde Excel</button>
+        <button type="button" class="btn-pequeno" onclick="toggleExcelForm()">📂 Importar desde Excel</button>
         <div id="excelFormContainer" style="display: none; margin-top: 10px;">
             <form action="importar_excel.php" method="post" enctype="multipart/form-data">
                 <label for="archivo_excel">Subir Excel:</label>
@@ -316,10 +315,9 @@ if ($result->num_rows > 0) {
                         </option>
                     <?php endforeach; ?>
                 </select>
-
-                <input type="date" name="garantia" placeholder="Fecha de Caducidad de garantia" required
+                    <label for="garantia">Fecha de término de garantía:</label>
+                    <input type="date" id="garantia" name="garantia" required
                     value="<?= $editando ? htmlspecialchars($componente_edit['garantia']) : '' ?>">
-
                 <div class="file-upload-wrapper">
                     <label for="comprobante" class="file-upload-label">
                         <i class="fas fa-file-upload"></i> Adjuntar Comprobante (PDF, Word, etc.)
@@ -335,7 +333,8 @@ if ($result->num_rows > 0) {
                     <button type="submit" name="guardar_cambios">Guardar Cambios</button>
                     <a href="<?= $_SERVER['PHP_SELF'] ?>">Cancelar</a>
                 <?php else: ?>
-                    <button type="submit" name="agregar">Agregar Insumos</button>
+                    <button type="submit" class="btn-pequeno" name="agregar">Agregar Insumos</button>
+                    <button type="reset" class="btn-pequeno">Limpiar</button>
                 <?php endif; ?>
             </form>
                 <?php if (isset($_GET['importado'])): ?>
@@ -406,48 +405,40 @@ if ($result->num_rows > 0) {
         });
     }
 
-    document.getElementById('codigoInput').addEventListener('keydown', function(event) {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        const codigo = this.value;
-        buscarComponente(codigo);
+document.addEventListener("DOMContentLoaded", function() {
+const input = document.getElementById("codigo");
+const sugerenciasBox = document.getElementById("sugerencias");
+
+input.addEventListener("input", function() {
+    const query = input.value;
+
+    if (query.length < 2) {
+        sugerenciasBox.innerHTML = "";
+        sugerenciasBox.style.display = "none";
+        return;
     }
-    });
 
-    document.addEventListener("DOMContentLoaded", function() {
-    const input = document.getElementById("codigo");
-    const sugerenciasBox = document.getElementById("sugerencias");
-
-    input.addEventListener("input", function() {
-        const query = input.value;
-
-        if (query.length < 2) {
+    fetch(`agregarcomp.php?query=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
             sugerenciasBox.innerHTML = "";
-            sugerenciasBox.style.display = "none";
-            return;
-        }
+            if (data.length === 0) {
+                sugerenciasBox.style.display = "none";
+                return;
+            }
 
-        fetch(`agregarcomp.php?query=${encodeURIComponent(query)}`)
-            .then(res => res.json())
-            .then(data => {
-                sugerenciasBox.innerHTML = "";
-                if (data.length === 0) {
+            data.forEach(item => {
+                const div = document.createElement("div");
+                div.textContent = item;
+                div.addEventListener("click", () => {
+                    input.value = item.split(" - ")[0];
+                    sugerenciasBox.innerHTML = "";
                     sugerenciasBox.style.display = "none";
-                    return;
-                }
-
-                data.forEach(item => {
-                    const div = document.createElement("div");
-                    div.textContent = item;
-                    div.addEventListener("click", () => {
-                        input.value = item.split(" - ")[0];
-                        sugerenciasBox.innerHTML = "";
-                        sugerenciasBox.style.display = "none";
-                    });
-                    sugerenciasBox.appendChild(div);
                 });
-                sugerenciasBox.style.display = "block";
+                sugerenciasBox.appendChild(div);
             });
+            sugerenciasBox.style.display = "block";
+        });
     });
 
     document.addEventListener("click", function(e) {
@@ -464,39 +455,6 @@ if ($result->num_rows > 0) {
 
 </script>
 <style>
-    .btn-accion {
-        font-size: 10px;
-        padding: 3px 6px;
-        margin-right: 3px;
-        border: none;
-        border-radius: 3px;
-        background-color: #007bff;
-        color: white;
-        text-decoration: none;
-        display: inline-block;
-        transition: background-color 0.2s;
-    }
-
-    .btn-accion:hover {
-        background-color: #0056b3;
-    }
-
-    .btn-eliminar {
-        background-color: #dc3545;
-    }
-
-    .btn-eliminar:hover {
-        background-color: #a71d2a;
-    }
-
-    .btn-ver {
-        background-color: #28a745;
-    }
-
-    .btn-ver:hover {
-        background-color: #1e7e34;
-    }
-
     .btn-acciones-group {
         display: flex;
         flex-direction: row;
@@ -504,6 +462,21 @@ if ($result->num_rows > 0) {
         justify-content: center;
         align-items: center;
         flex-wrap: wrap;
+    }
+    .btn-pequeno {
+        padding: 12px 20px;
+        font-size: 14px;
+        border-radius: 10px;
+        background-color:#0056b3;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        width: 20%;
+    }
+
+    .btn-pequeno:hover {
+        background-color:rgb(4, 65, 129);
     }
 </style>
 </body>

@@ -15,7 +15,6 @@ if ($codigo) {
             'encontrado' => true,
             'insumo' => $row['insumo'],
             'codigo' => $row['codigo'],
-            'stock' => $row['stock'],
             'categoria' => $row['categoria'],
             'marca' => $row['marca'],
             'ubicacion' => $row['ubicacion'],

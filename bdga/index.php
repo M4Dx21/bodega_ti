@@ -18,7 +18,7 @@
         <form method="post">
             <button type="submit" name="role" value="admin" class="role-button admin">Admin</button>
             <button type="submit" name="role" value="prestador" class="role-button prestador">Bodega</button>
-            <button type="submit" name="role" value="especial" class="role-button admin">Especial</button>
+          <!--  <button type="submit" name="role" value="especial" class="role-button admin">Especial</button> -->
         </form>
         <?php
         if (isset($_POST['role'])) {

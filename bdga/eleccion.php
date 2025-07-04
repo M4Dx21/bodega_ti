@@ -76,11 +76,11 @@ if ($insumosBajos !== false && !empty($insumosBajos)) {
     <div class="container">
         <div class="botonera">
             <form action="agregarcomp.php" method="post">
-                <button type="submit" class="btn">Agregar Insumos</button>
+                <button type="submit" class="btn">🗄️ Agregar Insumos</button>
             </form>
 
             <button class="btn" onclick="window.location.href='bodega.php'">
-                Control de bodega
+              📦 Control de bodega
             </button>
 
             <form action="exportar_excel.php" method="post">
