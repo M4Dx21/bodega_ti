@@ -87,6 +87,7 @@ if ($result->num_rows > 0) {
         $solicitudes_result[] = $row;
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
