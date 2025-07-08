@@ -53,6 +53,35 @@ function obtenerValoresEnum($conn, $tabla, $columna) {
     return [];
 }
 
+function agregarValorEnumSiNoExiste($conn, $tabla, $columna, $nuevo_valor) {
+    $query = "SHOW COLUMNS FROM `$tabla` LIKE '$columna'";
+    $resultado = mysqli_query($conn, $query);
+    $fila = mysqli_fetch_assoc($resultado);
+    if (!$fila) return false;
+
+    if (preg_match("/^enum\('(.*)'\)$/", $fila['Type'], $matches)) {
+        $valores = explode("','", $matches[1]);
+        if (in_array($nuevo_valor, $valores)) {
+            return true;
+        }
+
+        $valores[] = $nuevo_valor;
+
+        $valores_escapados = array_map(function($v) {
+            return "'" . mysqli_real_escape_string($GLOBALS['conn'], $v) . "'";
+        }, $valores);
+        $enum_nuevo = "ENUM(" . implode(",", $valores_escapados) . ")";
+
+        $sql_alter = "ALTER TABLE `$tabla` MODIFY `$columna` $enum_nuevo NOT NULL";
+        if (mysqli_query($conn, $sql_alter)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    return false;
+}
+
 $enum_formatos = obtenerValoresEnum($conn, 'componentes', 'estado');
 $enum_ubicaciones = obtenerValoresEnum($conn, 'componentes', 'ubicacion');
 
@@ -87,7 +116,12 @@ if (isset($_POST['agregar'])) {
     $especialidad   = $_POST['categoria'];
     $formato        = $_POST['marca'];
     $estado         = $_POST['estado'];
-    $ubicacion      = $_POST['ubicacion'];
+    $ubicacion = $_POST['ubicacion_select'];
+    if ($ubicacion === 'otro' && !empty($_POST['otra_ubicacion'])) {
+        $ubicacion = trim($_POST['otra_ubicacion']);
+
+        agregarValorEnumSiNoExiste($conn, 'componentes', 'ubicacion', $ubicacion);
+    }
     $caracteristicas= $_POST['caracteristicas'];
     $observaciones  = $_POST['observaciones'];
     $garantia       = $_POST['garantia'];
@@ -112,7 +146,7 @@ if (isset($_POST['agregar'])) {
         if ($archivo_nombre) {
             mysqli_stmt_bind_param(
                 $stmt,
-                'sisssssssss',
+                'sissssssssss',
                 $nombre, $stock, $especialidad, $formato, $estado,
                 $ubicacion, $observaciones, $caracteristicas, $fecha_ingreso, $garantia,
                 $archivo_nombre,
@@ -174,7 +208,12 @@ if (isset($_POST['guardar_cambios'])) {
     $especialidad   = $_POST["categoria"];
     $formato        = $_POST["marca"];
     $estado         = $_POST["estado"];
-    $ubicacion      = $_POST["ubicacion"];
+    $ubicacion = $_POST['ubicacion_select'];
+    if ($ubicacion === 'otro' && !empty($_POST['otra_ubicacion'])) {
+        $ubicacion = trim($_POST['otra_ubicacion']);
+
+        agregarValorEnumSiNoExiste($conn, 'componentes', 'ubicacion', $ubicacion);
+    }
     $observaciones  = $_POST["observaciones"];
     $garantia       = $_POST["garantia"];
     $fecha_ingreso  = date('Y-m-d H:i:s');
@@ -252,7 +291,7 @@ if ($result->num_rows > 0) {
             <p><strong>Usuario: </strong><?php echo $_SESSION['nombre']; ?></p>
             <form action="logout.php" method="POST">
                 <button type="submit" class="logout-btn">Salir</button>
-                <button type="button" class="volver-btn" onclick="window.location.href='eleccion.php'">Volver</button>
+                <button type="button" class="volver-btn" onclick="window.history.go(-2);">Volver</button>
             </form>
         </div>
     </div>
@@ -298,14 +337,19 @@ if ($result->num_rows > 0) {
                 <input type="text" name="caracteristicas" placeholder="Caracteristicas del equipo" required
                     value="<?= $editando ? htmlspecialchars($componente_edit['caracteristicas']) : '' ?>">
 
-                <select name="ubicacion" required>
+                <select name="ubicacion_select" id="ubicacion_select" required>
                     <option value="">Seleccione ubicación</option>
                     <?php foreach ($enum_ubicaciones as $valor): ?>
                         <option value="<?= $valor ?>" <?= $editando && $componente_edit['ubicacion'] == $valor ? 'selected' : '' ?>>
                             <?= htmlspecialchars(ucfirst($valor)) ?>
                         </option>
                     <?php endforeach; ?>
+                    <option value="otro">Otro</option>
                 </select>
+
+                <div id="otra_ubicacion_div" style="display: none; margin-top: 10px;">
+                    <input type="text" name="otra_ubicacion" id="otra_ubicacion" placeholder="Especifique nueva ubicación">
+                </div>
 
                 <select name="estado" required>
                     <option value="">Seleccione Estado</option>
@@ -339,7 +383,11 @@ if ($result->num_rows > 0) {
             </form>
                 <?php if (isset($_GET['importado'])): ?>
             <div id="success-msg">¡Archivo importado correctamente!</div>
-        <?php endif; ?>
+                <?php endif; ?>
+                <?php if (isset($_GET['mensaje'])): ?>
+                    <div id="alerta-exito"><?= htmlspecialchars($_GET['mensaje']) ?></div>
+                <?php endif; ?>
+
     </div>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -453,8 +501,42 @@ input.addEventListener("input", function() {
         document.getElementById('file-name').textContent = fileName;
     });
 
+    document.getElementById('ubicacion_select').addEventListener('change', function() {
+        const otraDiv = document.getElementById('otra_ubicacion_div');
+        if (this.value === 'otro') {
+            otraDiv.style.display = 'block';
+            document.getElementById('otra_ubicacion').required = true;
+        } else {
+            otraDiv.style.display = 'none';
+            document.getElementById('otra_ubicacion').required = false;
+        }
+    });
+
 </script>
 <style>
+    #alerta-exito {
+        position: fixed;
+        bottom: 75px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgb(28, 192, 66);
+        color: white;
+        max-width: 300px;
+        padding: 15px 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        z-index: 9999;
+        animation: fadeOut 2s forwards;
+        text-align: center;
+    }
+
+
+    @keyframes fadeOut {
+        0% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { opacity: 0; display: none; }
+    }
+
     .btn-acciones-group {
         display: flex;
         flex-direction: row;
