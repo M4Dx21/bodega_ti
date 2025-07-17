@@ -51,11 +51,12 @@ $enum_formatos = obtenerValoresEnum($conn, 'componentes', 'estado');
 $enum_ubicaciones = obtenerValoresEnum($conn, 'componentes', 'ubicacion');
 
 if (isset($_POST['retirar'])) {
-
     $codigo   = $_POST['codigo'];
     $cantidad = (int)$_POST['stock'];
+    $usuario  = $_SESSION['nombre'];
+    $observaciones = isset($_POST['observaciones']) ? $_POST['observaciones'] : '';
 
-    $stmt = $conn->prepare("SELECT stock FROM componentes WHERE codigo = ?");
+    $stmt = $conn->prepare("SELECT stock, precio FROM componentes WHERE codigo = ?");
     $stmt->bind_param("s", $codigo);
     $stmt->execute();
     $resultado = $stmt->get_result();
@@ -67,12 +68,26 @@ if (isset($_POST['retirar'])) {
     } elseif ($cantidad > $fila['stock']) {
         $mensaje_final = "La cantidad solicitada excede el stock disponible.";
     } else {
-        $stmt = $conn->prepare("UPDATE componentes SET stock = stock - ? WHERE codigo = ?");
-        $stmt->bind_param("is", $cantidad, $codigo);
+        $stock_actual = (int)$fila['stock'];
+        $precio_actual = (float)$fila['precio'];
+
+        $precio_unitario = $stock_actual > 0 ? $precio_actual / $stock_actual : 0;
+        $precio_a_restar = $precio_unitario * $cantidad;
+
+        $nuevo_stock = $stock_actual - $cantidad;
+        $nuevo_precio = $precio_actual - $precio_a_restar;
+
+        $stmt = $conn->prepare("UPDATE componentes SET stock = ?, precio = ? WHERE codigo = ?");
+        $stmt->bind_param("ids", $nuevo_stock, $nuevo_precio, $codigo);
         $stmt->execute();
         $stmt->close();
 
-        $mensaje_final = "Stock descontado correctamente.";
+        $stmt = $conn->prepare("INSERT INTO salidas (num_serie, cantidad, fecha_salida, responsable, observaciones) VALUES (?, ?, NOW(), ?, ?)");
+        $stmt->bind_param("siss", $codigo, $cantidad, $usuario, $observaciones);
+        $stmt->execute();
+        $stmt->close();
+
+        $mensaje_final = "Stock y precio actualizados. Salida registrada correctamente.";
     }
 
     header('Location: ' . $_SERVER['PHP_SELF'] . '?mensaje=' . urlencode($mensaje_final));
@@ -107,7 +122,7 @@ if ($result->num_rows > 0) {
             <p><strong>Usuario: </strong><?php echo $_SESSION['nombre']; ?></p>
             <form action="logout.php" method="POST">
                 <button type="submit" class="logout-btn">Salir</button>
-                <button type="button" class="volver-btn" onclick="window.location.href='eleccion.php'">Volver</button>
+             <!--   <button type="button" class="volver-btn" onclick="window.location.href='eleccion.php'">Volver</button>  -->
             </form>
         </div>
     </div>
@@ -120,14 +135,14 @@ if ($result->num_rows > 0) {
         <div id="mensaje-container">
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>
-    <h2><?= $editando ? 'Editar Insumos' : 'Agregar Insumos' ?></h2>
+    <h2><?= $editando ? 'Editar Insumos' : 'Retirar Insumos' ?></h2>
         <form action="" method="post" enctype="multipart/form-data">
             <?php if ($editando): ?>
                 <input type="hidden" name="id" value="<?= $componente_edit['id'] ?>">
             <?php endif; ?>
 
             <input type="text" id="codigo" name="codigo" placeholder="Número de serie"
-                value="<?= $editando ? htmlspecialchars($componente_edit['codigo']) : '' ?>">
+                value="<?= $editando ? htmlspecialchars($componente_edit['codigo']) : '' ?>" required>
 
             <input type="text" name="categoria" placeholder="Categoría" 
                 value="<?= $editando ? htmlspecialchars($componente_edit['categoria']) : '' ?>" readonly>

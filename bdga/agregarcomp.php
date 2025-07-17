@@ -112,7 +112,7 @@ if (isset($_POST['agregar'])) {
 
     $nombre         = $_POST['insumo'];
     $codigo         = $_POST['codigo'];
-    $stock          = $_POST['stock'];
+    $stock          = (int)$_POST["stock"];
     $especialidad   = $_POST['categoria'];
     $formato        = $_POST['marca'];
     $estado         = $_POST['estado'];
@@ -124,6 +124,8 @@ if (isset($_POST['agregar'])) {
     }
     $caracteristicas= $_POST['caracteristicas'];
     $observaciones  = $_POST['observaciones'];
+    $precio_unitario = $_POST["precio"];
+    $precio_total = $precio_unitario * $stock;
     $garantia       = $_POST['garantia'];
     $fecha_ingreso  = date('Y-m-d H:i:s');
 
@@ -135,29 +137,47 @@ if (isset($_POST['agregar'])) {
     mysqli_stmt_close($stmt);
 
     if ($existe) {
+        $consulta_datos = "SELECT stock, precio FROM componentes WHERE codigo = ?";
+        $stmt_datos = mysqli_prepare($conn, $consulta_datos);
+        mysqli_stmt_bind_param($stmt_datos, 's', $codigo);
+        mysqli_stmt_execute($stmt_datos);
+        $resultado_datos = mysqli_stmt_get_result($stmt_datos);
+        $fila_datos = mysqli_fetch_assoc($resultado_datos);
+        mysqli_stmt_close($stmt_datos);
+
+        $stock_actual = (int)$fila_datos['stock'];
+        $precio_actual = (int)$fila_datos['precio'];
+
+        $precio_unitario_nuevo = (int)$_POST['precio'];
+        $stock_nuevo = (int)$_POST['stock'];
+        $precio_total_nuevo = $precio_unitario_nuevo * $stock_nuevo;
+
+        $nuevo_stock_total = $stock_actual + $stock_nuevo;
+        $nuevo_precio_total = $precio_actual + $precio_total_nuevo;
+
         $sql = "UPDATE componentes 
-                   SET insumo = ?, stock = stock + ?, categoria = ?, marca = ?, estado = ?,
-                       ubicacion = ?, observaciones = ?, caracteristicas = ?, fecha_ingreso = ?, garantia = ?"
-                 . ($archivo_nombre ? ", comprobante = ?" : "")
-               . " WHERE codigo = ?";
+                SET insumo = ?, stock = ?, categoria = ?, marca = ?, estado = ?,
+                    ubicacion = ?, observaciones = ?, precio = ?, caracteristicas = ?, fecha_ingreso = ?, garantia = ?"
+                . ($archivo_nombre ? ", comprobante = ?" : "")
+            . " WHERE codigo = ?";
 
         $stmt = mysqli_prepare($conn, $sql);
 
         if ($archivo_nombre) {
             mysqli_stmt_bind_param(
                 $stmt,
-                'sissssssssss',
-                $nombre, $stock, $especialidad, $formato, $estado,
-                $ubicacion, $observaciones, $caracteristicas, $fecha_ingreso, $garantia,
+                'sisssssssssss',
+                $nombre, $nuevo_stock_total, $especialidad, $formato, $estado,
+                $ubicacion, $observaciones, $nuevo_precio_total, $caracteristicas, $fecha_ingreso, $garantia,
                 $archivo_nombre,
                 $codigo
             );
         } else {
             mysqli_stmt_bind_param(
                 $stmt,
-                'sissssssss',
-                $nombre, $stock, $especialidad, $formato, $estado,
-                $ubicacion, $observaciones, $caracteristicas, $fecha_ingreso, $garantia,
+                'sissssssssss',
+                $nombre, $nuevo_stock_total, $especialidad, $formato, $estado,
+                $ubicacion, $observaciones, $nuevo_precio_total, $caracteristicas, $fecha_ingreso, $garantia,
                 $codigo
             );
         }
@@ -168,15 +188,15 @@ if (isset($_POST['agregar'])) {
     } else {
         $sql = "INSERT INTO componentes
                 (codigo, insumo, stock, categoria, marca, estado, ubicacion, observaciones,
-                 fecha_ingreso, caracteristicas, garantia, comprobante)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+                fecha_ingreso, caracteristicas, precio, garantia, comprobante)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param(
             $stmt,
-            'ssisssssssss',
+            'ssissssssssss',
             $codigo, $nombre, $stock, $especialidad, $formato, $estado, $ubicacion,
-            $observaciones, $fecha_ingreso, $caracteristicas, $garantia, $archivo_nombre
+            $observaciones, $fecha_ingreso, $caracteristicas, $precio_total, $garantia, $archivo_nombre
         );
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
@@ -215,6 +235,7 @@ if (isset($_POST['guardar_cambios'])) {
         agregarValorEnumSiNoExiste($conn, 'componentes', 'ubicacion', $ubicacion);
     }
     $observaciones  = $_POST["observaciones"];
+    $precio         = $_POST["precio"];
     $garantia       = $_POST["garantia"];
     $fecha_ingreso  = date('Y-m-d H:i:s');
 
@@ -237,22 +258,22 @@ if (isset($_POST['guardar_cambios'])) {
     if ($archivo_nombre) {
         $stmt = $conn->prepare("UPDATE componentes SET
             insumo = ?, stock = ?, categoria = ?, marca = ?, estado = ?, ubicacion = ?,
-            observaciones = ?, fecha_ingreso = ?, garantia = ?, comprobante = ?
+            observaciones = ?, fecha_ingreso = ?, garantia = ?, comprobante = ?, precio = ?
             WHERE id = ?");
         $stmt->bind_param(
             "sissssssssi",
             $nombre, $cantidad, $especialidad, $formato, $estado, $ubicacion,
-            $observaciones, $fecha_ingreso, $garantia, $archivo_nombre, $id
+            $observaciones, $fecha_ingreso, $garantia, $archivo_nombre, $id, $precio_total
         );
     } else {
         $stmt = $conn->prepare("UPDATE componentes SET
             insumo = ?, stock = ?, categoria = ?, marca = ?, estado = ?, ubicacion = ?,
-            observaciones = ?, fecha_ingreso = ?, garantia = ?
+            observaciones = ?, fecha_ingreso = ?, garantia = ?, precio = ?
             WHERE id = ?");
         $stmt->bind_param(
-            "sisssssssi",
+            "sisssssssis",
             $nombre, $cantidad, $especialidad, $formato, $estado, $ubicacion,
-            $observaciones, $fecha_ingreso, $garantia, $id
+            $observaciones, $fecha_ingreso, $garantia, $id, $precio_total
         );
     }
 
@@ -372,6 +393,9 @@ if ($result->num_rows > 0) {
 
                 <input type="text" id="observaciones" name="observaciones" placeholder="Observaciones"
                     value="<?= $editando ? htmlspecialchars($componente_edit['observaciones']) : '' ?>">
+
+                <input type="text" id="precio" name="precio" placeholder="Precio de producto (Unitario)"
+                    value="<?= $editando ? htmlspecialchars($componente_edit['precio']) : '' ?>">
 
                 <?php if ($editando): ?>
                     <button type="submit" name="guardar_cambios">Guardar Cambios</button>

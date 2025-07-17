@@ -25,17 +25,14 @@ $total_filas = mysqli_fetch_assoc($total_resultado)['total'];
 $total_paginas = ceil($total_filas / $cantidad_por_pagina);
 
 $sql_final = "SELECT 
-                insumo,
                 categoria, 
-                marca, 
-                estado, 
-                ubicacion, 
-                MAX(fecha_ingreso) AS fecha_ingreso, 
-                SUM(stock) AS stock 
-             " . $sql_base . " 
-             GROUP BY categoria
-             ORDER BY fecha_ingreso DESC 
-             LIMIT $cantidad_por_pagina OFFSET $offset";
+                SUM(stock) AS stock,
+                SUM(precio) AS precio_total,
+                MAX(fecha_ingreso) AS fecha_ingreso
+            " . $sql_base . " 
+            GROUP BY categoria
+            ORDER BY fecha_ingreso DESC 
+            LIMIT $cantidad_por_pagina OFFSET $offset";
 $resultado = mysqli_query($conn, $sql_final);
 $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 
@@ -109,12 +106,14 @@ if (isset($_GET['query'])) {
                     <tr>
                         <th>Categoría</th>
                         <th>Stock Total</th>
+                        <th>Precio Total</th>
                         <th>Ver Detalles</th>
                     </tr>
                     <?php foreach ($personas_dentro as $componente): ?>
                         <tr>
                             <td><?= htmlspecialchars($componente['categoria']) ?></td>
                             <td><?= htmlspecialchars($componente['stock']) ?></td>
+                            <td><?= htmlspecialchars(number_format($componente['precio_total'], 0, ',', '.')) ?> CLP</td>
                             <td>
                                 <form action="bodegainterior.php" method="GET" style="margin: 0;">
                                     <input type="hidden" name="categoria" value="<?= htmlspecialchars($componente['categoria']) ?>">
