@@ -344,19 +344,22 @@ if ($result->num_rows > 0) {
                     value="<?= $editando ? htmlspecialchars($componente_edit['codigo']) : '' ?>" autofocus>
 
                 <input type="text" name="categoria" placeholder="Categoria" required
-                    value="<?= $editando ? htmlspecialchars($componente_edit['categoria']) : '' ?>">
+                    value="<?= $editando ? htmlspecialchars($componente_edit['categoria']) : '' ?>" required>
 
                 <input type="text" name="marca" placeholder="Marca" required
-                    value="<?= $editando ? htmlspecialchars($componente_edit['marca']) : '' ?>">
+                    value="<?= $editando ? htmlspecialchars($componente_edit['marca']) : '' ?>" required>
 
                 <input type="text" name="insumo" placeholder="Modelo" required
-                    value="<?= $editando ? htmlspecialchars($componente_edit['insumo']) : '' ?>">
+                    value="<?= $editando ? htmlspecialchars($componente_edit['insumo']) : '' ?>" required>
 
                 <input type="number" name="stock" placeholder="Cantidad" required
-                    value="<?= $editando ? htmlspecialchars($componente_edit['stock']) : '' ?>">
+                    value="<?= $editando ? htmlspecialchars($componente_edit['stock']) : '' ?>" required>
 
                 <input type="text" name="caracteristicas" placeholder="Caracteristicas del equipo" required
                     value="<?= $editando ? htmlspecialchars($componente_edit['caracteristicas']) : '' ?>">
+                
+                <input type="text" id="precio" name="precio" placeholder="Precio de producto (Unitario)"
+                    value="<?= $editando ? htmlspecialchars($componente_edit['precio']) : '' ?>" required>
 
                 <select name="ubicacion_select" id="ubicacion_select" required>
                     <option value="">Seleccione ubicación</option>
@@ -393,9 +396,6 @@ if ($result->num_rows > 0) {
 
                 <input type="text" id="observaciones" name="observaciones" placeholder="Observaciones"
                     value="<?= $editando ? htmlspecialchars($componente_edit['observaciones']) : '' ?>">
-
-                <input type="text" id="precio" name="precio" placeholder="Precio de producto (Unitario)"
-                    value="<?= $editando ? htmlspecialchars($componente_edit['precio']) : '' ?>">
 
                 <?php if ($editando): ?>
                     <button type="submit" name="guardar_cambios">Guardar Cambios</button>

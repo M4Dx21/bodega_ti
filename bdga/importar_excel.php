@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_excel'])) {
                 $caracteristicas = trim($hoja->getCell("I$fila")->getValue());
                 $garantia        = trim($hoja->getCell("J$fila")->getValue());
                 $comprobante     = trim($hoja->getCell("K$fila")->getValue());
+                $precio          = trim($hoja->getCell("L$fila")->getValue());
 
                 if ($codigo === '' && $insumo === '') break;
 
@@ -56,14 +57,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_excel'])) {
                             caracteristicas = ?,
                             garantia = ?,
                             comprobante = ?,
-                            fecha_ingreso = ?
+                            fecha_ingreso = ?,
+                            precio = ?
                          WHERE codigo = ?"
                     );
                     $stmtUpdate->bind_param(
-                        'sissssssssss',
+                        'sisssssssssss',
                         $insumo, $stock, $categoria, $marca, $estado, $ubicacion,
                         $observaciones, $caracteristicas, $garantia, $comprobante,
-                        $fecha_ingreso, $codigo
+                        $fecha_ingreso, $codigo, $precio
                     );
                     $stmtUpdate->execute();
                     $stmtUpdate->close();
@@ -71,13 +73,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_excel'])) {
                     $stmtInsert = $conn->prepare(
                         "INSERT INTO componentes (
                             codigo, insumo, stock, categoria, marca, estado, ubicacion,
-                            observaciones, fecha_ingreso, caracteristicas, garantia, comprobante
-                        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+                            observaciones, fecha_ingreso, caracteristicas, garantia, comprobante, precio
+                        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
                     );
                     $stmtInsert->bind_param(
                         'ssisssssssss',
                         $codigo, $insumo, $stock, $categoria, $marca, $estado, $ubicacion,
-                        $observaciones, $fecha_ingreso, $caracteristicas, $garantia, $comprobante
+                        $observaciones, $fecha_ingreso, $caracteristicas, $garantia, $comprobante, $precio
                     );
                     $stmtInsert->execute();
                     $stmtInsert->close();
