@@ -152,6 +152,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
             border-radius: 5px;
             margin-bottom: 15px;
         }
+        .container {
+            padding: 20px;       
+            width: 30%;    
+            margin: 300px auto 0 auto;
+            border-radius: 15px; 
+            background-color:rgb(255, 255, 255);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            padding: 30px 10px;           
+            width: 70%;              
+            margin: 3px auto 0 auto; 
+            border-radius: 15px; 
+            background-color: #e8f0fe;
+            box-shadow: 0 0 15px rgba(0,0,0,0.15);
+            text-align: center;
+        }
     </style>
 </body>
 </html>
