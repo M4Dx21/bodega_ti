@@ -142,7 +142,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
             <button type="submit" name="solicitar">INGRESAR</button>
         </form>
     </div>
-
     <style>
         .error-message {
             color: red;
