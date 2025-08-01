@@ -42,7 +42,7 @@ body {
    width: 100%;
    max-width: 1600px;
    margin: 10px auto;
-   margin-top: 77px;
+   margin-top: 94px;
 }
 
 .container form > * {
@@ -434,24 +434,6 @@ form {
    pointer-events: none;
 }
 
-.volver-btn {
-   background-color: #0056b3;
-   color: white;
-   border: none;
-   padding: 8px 12px;
-   font-size: 17px;
-   cursor: pointer;
-   border-radius: 10px;
-   text-align: center;
-   display: flex;
-   justify-content: center;
-   align-items: center;
-}
-
-.volver-btn:hover {
-   background-color: #093b70;
-}
-
 .msg.show {
    opacity: 1;
    visibility: visible;
@@ -513,6 +495,23 @@ td form {
    cursor: pointer;
    transition: background-color 0.3s ease, transform 0.3s ease;
    font-weight: bold;
+}
+.volver-btn {
+   font-size: 12px !important;
+   padding: 4px 10px !important;
+   width: auto !important;
+   background-color: #0056b3 !important;
+   color: white !important;
+   border: 1px solid #0a56a7;
+   border-radius: 8px;
+   cursor: pointer;
+   display: inline-block;
+   text-align: center;
+}
+
+.volver-btn:hover {
+   background-color: #082d55!important;
+   color: #ffffff !important;
 }
 
 .error-message {
