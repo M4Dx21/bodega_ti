@@ -13,6 +13,7 @@ if (!isset($_POST['codigo'])) {
 
 $codigos = $_POST['codigo'];
 $insumos = $_POST['insumo'];
+$marca = $_POST['marca'];
 $categorias = $_POST['categoria'];
 $cantidades = $_POST['cantidad'];
 $ubicaciones = $_POST['ubicacion'];
@@ -66,20 +67,24 @@ $pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Fecha: ' . date('d/m/Y 
 
 $pdf->Ln(5);
 
-$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Código'), 1);
-$pdf->Cell(60,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Insumo'), 1);
-$pdf->Cell(40,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Categoría'), 1);
-$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Cantidad'), 1);
-$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Ubicación'), 1);
+$pdf->Cell(50,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'TIPO DE EQUIPO'), 1);
+$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'MARCA'), 1);
+$pdf->Cell(60,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'MODELO'), 1);
+$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'SERIE'), 1);
+$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'NOMBRE DE EQUIPO'), 1);
+$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'SERVICIO'), 1);
+$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'UBICACIÓN'), 1);
+
+
 $pdf->Ln();
 
 $pdf->SetFont('Arial','',10);
 for ($i = 0; $i < count($codigos); $i++) {
-    $pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $codigos[$i]), 1);
+    $pdf->Cell(50,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $categorias[$i]), 1);
+    $pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $marca[$i]), 1);
     $pdf->Cell(60,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $insumos[$i]), 1);
-    $pdf->Cell(40,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $categorias[$i]), 1);
-    $pdf->Cell(30,10, $cantidades[$i], 1);
-    $pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $ubicaciones[$i]), 1);
+    $pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $codigos[$i]), 1);
+
     $pdf->Ln();
 }
 

@@ -140,6 +140,7 @@ if ($result->num_rows > 0) {
                     <tr>
                         <th>Número de Serie</th>
                         <th>Categoría</th>
+                        <th>Marca</th>
                         <th>Modelo</th>
                         <th>Cantidad</th>
                         <th>Ubicación</th>
@@ -147,10 +148,11 @@ if ($result->num_rows > 0) {
                     </tr>
                     <tr>
                         <td>
-                        <input type="text" id="codigo" placeholder="Número de serie" required>
-                        <div id="sugerencias" style="position: absolute; background: white; border: 1px solid #ccc; z-index: 1000;"></div>
+                            <input type="text" id="codigo" placeholder="Número de serie" required>
+                            <div id="sugerencias" style="position: absolute; background: white; border: 1px solid #ccc; z-index: 1000;"></div>
                         </td>
                         <td><input type="text" id="categoria" readonly></td>
+                        <td><input type="text" id="marca" readonly></td>
                         <td><input type="text" id="insumo" readonly></td>
                         <td><input type="number" id="stock" min="1" required></td>
                         <td><input type="text" id="ubicacion" readonly></td>
@@ -166,6 +168,7 @@ if ($result->num_rows > 0) {
                     <tr>
                         <th>Número de Serie</th>
                         <th>Categoría</th>
+                        <th>Marca</th>
                         <th>Modelo</th>
                         <th>Cantidad</th>
                         <th>Ubicación</th>
@@ -276,6 +279,7 @@ function buscarComponente(codigo) {
             if (data.encontrado) {
                 document.getElementById("codigo").value = data.codigo;
                 document.getElementById("categoria").value = data.categoria;
+                document.getElementById("marca").value = data.marca;
                 document.getElementById("insumo").value = data.insumo;
                 document.getElementById("ubicacion").value = data.ubicacion;
                 document.getElementById("stock").max = data.stock;
@@ -298,17 +302,17 @@ document.getElementById("codigo").addEventListener("keydown", function(e) {
 function agregarInsumo() {
     const codigo = document.getElementById("codigo").value.trim();
     const categoria = document.getElementById("categoria").value.trim();
+    const marca = document.getElementById("marca").value.trim();
     const insumo = document.getElementById("insumo").value.trim();
     const cantidadInput = document.getElementById("stock");
     const cantidad = parseInt(cantidadInput.value.trim());
     const stockMax = parseInt(cantidadInput.getAttribute("data-max-stock"));
     const ubicacion = document.getElementById("ubicacion").value.trim();
 
-    if (!codigo || !insumo || !categoria || !cantidad || cantidad < 1 || !ubicacion) {
+    if (!codigo || !insumo || !marca || !categoria || !cantidad || cantidad < 1 || !ubicacion) {
         alert("Completa todos los campos antes de agregar.");
         return;
     }
-
     if (cantidad > stockMax) {
         alert("La cantidad excede el stock disponible (" + stockMax + ").");
         return;
@@ -323,8 +327,10 @@ function agregarInsumo() {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
+
         <td><input type="hidden" name="codigo[]" value="${codigo}">${codigo}</td>
         <td><input type="hidden" name="categoria[]" value="${categoria}">${categoria}</td>
+        <td><input type="hidden" name="marca[]" value="${marca}">${marca}</td>
         <td><input type="hidden" name="insumo[]" value="${insumo}">${insumo}</td>
         <td><input type="hidden" name="cantidad[]" value="${cantidad}">${cantidad}</td>
         <td><input type="hidden" name="ubicacion[]" value="${ubicacion}">${ubicacion}</td>
