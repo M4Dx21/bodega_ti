@@ -20,7 +20,7 @@ if (isset($_GET['query'])) {
     echo json_encode($suggestions);
     exit();
 }
-
+$mensaje = isset($_GET['mensaje']) ? urldecode($_GET['mensaje']) : '';
 $editando = false;
 $componente_edit = null;
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
@@ -122,7 +122,6 @@ if ($result->num_rows > 0) {
             <p><strong>Usuario: </strong><?php echo $_SESSION['nombre']; ?></p>
             <form action="logout.php" method="POST">
                 <button type="submit" class="logout-btn">Salir</button>
-             <!--   <button type="button" class="volver-btn" onclick="window.location.href='eleccion.php'">Volver</button>  -->
             </form>
         </div>
     </div>
@@ -136,48 +135,52 @@ if ($result->num_rows > 0) {
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>
     <h2><?= $editando ? 'Editar Insumos' : 'Retirar Insumos' ?></h2>
-        <form action="" method="post" enctype="multipart/form-data">
-            <?php if ($editando): ?>
-                <input type="hidden" name="id" value="<?= $componente_edit['id'] ?>">
-            <?php endif; ?>
+            <form id="form-agregar-insumo" onsubmit="return false;">
+                <table border="1" cellpadding="10" cellspacing="0">
+                    <tr>
+                        <th>Número de Serie</th>
+                        <th>Categoría</th>
+                        <th>Modelo</th>
+                        <th>Cantidad</th>
+                        <th>Ubicación</th>
+                        <th>Acción</th>
+                    </tr>
+                    <tr>
+                        <td>
+                        <input type="text" id="codigo" placeholder="Número de serie" required>
+                        <div id="sugerencias" style="position: absolute; background: white; border: 1px solid #ccc; z-index: 1000;"></div>
+                        </td>
+                        <td><input type="text" id="categoria" readonly></td>
+                        <td><input type="text" id="insumo" readonly></td>
+                        <td><input type="number" id="stock" min="1" required></td>
+                        <td><input type="text" id="ubicacion" readonly></td>
+                        <td><button type="button" onclick="agregarInsumo()">Agregar a lista</button></td>
+                    </tr>
+                </table>
+            </form>
 
-            <input type="text" id="codigo" name="codigo" placeholder="Número de serie"
-                value="<?= $editando ? htmlspecialchars($componente_edit['codigo']) : '' ?>" required>
-
-            <input type="text" name="categoria" placeholder="Categoría" 
-                value="<?= $editando ? htmlspecialchars($componente_edit['categoria']) : '' ?>" readonly>
-
-            <input type="text" name="marca" placeholder="Marca" 
-                value="<?= $editando ? htmlspecialchars($componente_edit['marca']) : '' ?>" readonly>
-
-            <input type="text" name="insumo" placeholder="Modelo" 
-                value="<?= $editando ? htmlspecialchars($componente_edit['insumo']) : '' ?>" readonly>
-
-            <input type="number" name="stock" placeholder="Cantidad" min="1"
-                max="<?= $editando ? (int)$componente_edit['stock'] : '' ?>" 
-                value="<?= $editando ? htmlspecialchars($componente_edit['stock']) : '' ?>" required>
-
-            <input type="text" name="caracteristicas" placeholder="Características del equipo"
-                value="<?= $editando ? htmlspecialchars($componente_edit['caracteristicas']) : '' ?>" readonly>
-
-            <input type="text" name="estado" placeholder="Estado del equipo" 
-                value="<?= $editando ? htmlspecialchars($componente_edit['estado']) : '' ?>" readonly>
-
-            <input type="text" name="ubicacion" placeholder="Ubicación del equipo"
-                value="<?= $editando ? htmlspecialchars($componente_edit['ubicacion']) : '' ?>" readonly>
-
-            <input type="text" id="observaciones" name="observaciones" placeholder="Observaciones"
-                value="<?= $editando ? htmlspecialchars($componente_edit['observaciones']) : '' ?>" readonly>
-
-            <?php if ($editando): ?>
-                <button type="submit" name="guardar_cambios">Guardar Cambios</button>
-                <a href="<?= $_SERVER['PHP_SELF'] ?>">Cancelar</a>
-            <?php else: ?>
-                <button type="submit" class="btn-pequeno" name="retirar">Retirar Insumo</button>
-            <?php endif; ?>
+        <h3>Lista de insumos a retirar</h3>
+        <form action="procesar_retiro_multiple.php" method="POST">
+            <table border="1" cellpadding="10" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Número de Serie</th>
+                        <th>Categoría</th>
+                        <th>Modelo</th>
+                        <th>Cantidad</th>
+                        <th>Ubicación</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="body-carrito">
+                </tbody>
+            </table>
+            <br>
+            <button type="submit" class="btn-pequeno">Retirar Todos</button>
         </form>
     </div>
 <script>
+    let listaInsumos = [];
     document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll('input[type="text"]').forEach(function (input) {
         input.addEventListener('input', function () {
@@ -216,37 +219,12 @@ if ($result->num_rows > 0) {
         console.log("Código escaneado:", inputCodigo.value);
         }
     });
-    
-    function buscarComponente(codigo) {
-    if (codigo.trim() === "") return;
 
-    fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
-        .then(response => response.json())
-        .then(data => {
-            if (data.encontrado) {
-                document.querySelector('input[name="codigo"]').value = data.codigo;
-                document.querySelector('input[name="insumo"]').value = data.insumo;
-                document.querySelector('input[name="marca"]').value = data.marca;
-                document.querySelector('input[name="categoria"]').value = data.categoria;
-                document.querySelector('input[name="ubicacion"]').value = data.ubicacion;
-                document.querySelector('input[name="estado"]').value = data.estado;
-                document.querySelector('input[name="caracteristicas"]').value = data.caracteristicas;
-                document.querySelector('input[name="observaciones"]').value = data.observaciones;
-                alert("Insumo detectado: " + data.insumo);
-            } else {
-                alert("El insumo no se encuentra en la base de datos.");
-            }
-        })
-        .catch(error => {
-            alert("Error al buscar el insumo: " + error);
-        });
-    }
+    document.addEventListener("DOMContentLoaded", function() {
+    const input = document.getElementById("codigo");
+    const sugerenciasBox = document.getElementById("sugerencias");
 
-document.addEventListener("DOMContentLoaded", function() {
-const input = document.getElementById("codigo");
-const sugerenciasBox = document.getElementById("sugerencias");
-
-input.addEventListener("input", function() {
+    input.addEventListener("input", function() {
     const query = input.value;
 
     if (query.length < 2) {
@@ -288,6 +266,81 @@ input.addEventListener("input", function() {
     if ($_POST['stock'] > $componente_edit['stock']) {
     die("La cantidad solicitada excede el stock disponible.");
     }
+
+function buscarComponente(codigo) {
+    if (!codigo.trim()) return;
+
+    fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
+        .then(res => res.json())
+        .then(data => {
+            if (data.encontrado) {
+                document.getElementById("codigo").value = data.codigo;
+                document.getElementById("categoria").value = data.categoria;
+                document.getElementById("insumo").value = data.insumo;
+                document.getElementById("ubicacion").value = data.ubicacion;
+                document.getElementById("stock").max = data.stock;
+                document.getElementById("stock").setAttribute("data-max-stock", data.stock);
+                document.getElementById("stock").focus();
+            } else {
+                alert("Insumo no encontrado.");
+            }
+        })
+        .catch(error => alert("Error al buscar insumo: " + error));
+}
+
+document.getElementById("codigo").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        buscarComponente(this.value);
+    }
+});
+
+function agregarInsumo() {
+    const codigo = document.getElementById("codigo").value.trim();
+    const categoria = document.getElementById("categoria").value.trim();
+    const insumo = document.getElementById("insumo").value.trim();
+    const cantidadInput = document.getElementById("stock");
+    const cantidad = parseInt(cantidadInput.value.trim());
+    const stockMax = parseInt(cantidadInput.getAttribute("data-max-stock"));
+    const ubicacion = document.getElementById("ubicacion").value.trim();
+
+    if (!codigo || !insumo || !categoria || !cantidad || cantidad < 1 || !ubicacion) {
+        alert("Completa todos los campos antes de agregar.");
+        return;
+    }
+
+    if (cantidad > stockMax) {
+        alert("La cantidad excede el stock disponible (" + stockMax + ").");
+        return;
+    }
+
+    if (listaInsumos.some(item => item.codigo === codigo)) {
+        alert("Este insumo ya fue agregado.");
+        return;
+    }
+
+    listaInsumos.push({ codigo });
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+        <td><input type="hidden" name="codigo[]" value="${codigo}">${codigo}</td>
+        <td><input type="hidden" name="categoria[]" value="${categoria}">${categoria}</td>
+        <td><input type="hidden" name="insumo[]" value="${insumo}">${insumo}</td>
+        <td><input type="hidden" name="cantidad[]" value="${cantidad}">${cantidad}</td>
+        <td><input type="hidden" name="ubicacion[]" value="${ubicacion}">${ubicacion}</td>
+        <td><button type="button" onclick="eliminarInsumo(this, '${codigo}')">Eliminar</button></td>
+    `;
+    document.getElementById("body-carrito").appendChild(tr);
+
+    document.getElementById("form-agregar-insumo").reset();
+    document.getElementById("stock").removeAttribute("data-max-stock");
+    document.getElementById("codigo").focus();
+}
+
+function eliminarInsumo(boton, codigo) {
+    listaInsumos = listaInsumos.filter(item => item.codigo !== codigo);
+    boton.closest("tr").remove();
+}
 
 </script>
 <style>

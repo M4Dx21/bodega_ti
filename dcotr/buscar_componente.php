@@ -1,32 +1,22 @@
 <?php
 include 'db.php';
-header('Content-Type: application/json');
 
-$codigo = $_GET['codigo'] ?? '';
-$response = ['encontrado' => false];
+$codigo = $_GET['codigo'];
+$stmt = $conn->prepare("SELECT codigo, insumo, categoria, ubicacion, stock FROM componentes WHERE codigo = ?");
+$stmt->bind_param("s", $codigo);
+$stmt->execute();
+$result = $stmt->get_result();
 
-if ($codigo) {
-    $stmt = $conn->prepare("SELECT * FROM componentes WHERE codigo = ?");
-    $stmt->bind_param("s", $codigo);
-    $stmt->execute();
-    $resultado = $stmt->get_result();
-    if ($row = $resultado->fetch_assoc()) {
-        $response = [
-            'encontrado' => true,
-            'insumo' => $row['insumo'],
-            'codigo' => $row['codigo'],
-            'categoria' => $row['categoria'],
-            'marca' => $row['marca'],
-            'ubicacion' => $row['ubicacion'],
-            'estado' => $row['estado'],
-            'caracteristicas' => $row['caracteristicas'],
-            'ubicacion' => $row['ubicacion'],
-            'observaciones' => $row['observaciones']
-
-        ];
-    }
-    $stmt->close();
+if ($row = $result->fetch_assoc()) {
+    echo json_encode([
+        "encontrado" => true,
+        "codigo" => $row['codigo'],
+        "insumo" => $row['insumo'],
+        "categoria" => $row['categoria'],
+        "ubicacion" => $row['ubicacion'],
+        "stock" => $row['stock']
+    ]);
+} else {
+    echo json_encode(["encontrado" => false]);
 }
-
-echo json_encode($response);
-$conn->close();
+?>
