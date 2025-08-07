@@ -61,32 +61,44 @@ class PDF extends FPDF {
 $pdf = new PDF();
 $pdf->AddPage();
 $pdf->SetFont('Arial','B',14);
-$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Retiro de Insumos - Hospital Clínico Félix Bulnes'), 0, 1, 'C');
-$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Retirado por: ' . $usuario), 0, 1);
-$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Fecha: ' . date('d/m/Y H:i:s')), 0, 1);
+$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'ACTA DE ENTREGA EQUIPAMIENTO COMPUTACIONAL
+'), 0, 1, 'C');
+
+$pdf->Ln(2);
+
+$pdf->SetFont('Arial','B',12);
+$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'En Santiago '. date('d/m/Y H:i:s') . ' se hace entrega de equipamiento tecnológico de propiedad '), 0, 1);
+$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'de Hospital Dr. Félix Bulnes Cerda, el cual posee las siguientes características: '), 0, 1);
 
 $pdf->Ln(5);
 
-$pdf->Cell(50,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'TIPO DE EQUIPO'), 1);
-$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'MARCA'), 1);
-$pdf->Cell(60,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'MODELO'), 1);
-$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'SERIE'), 1);
-$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'NOMBRE DE EQUIPO'), 1);
-$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'SERVICIO'), 1);
-$pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'UBICACIÓN'), 1);
-
-
-$pdf->Ln();
 
 $pdf->SetFont('Arial','',10);
 for ($i = 0; $i < count($codigos); $i++) {
-    $pdf->Cell(50,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $categorias[$i]), 1);
-    $pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $marca[$i]), 1);
-    $pdf->Cell(60,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $insumos[$i]), 1);
-    $pdf->Cell(30,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $codigos[$i]), 1);
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'TIPO DE EQUIPO: ' . $categorias[$i]), 0, 1);
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'MARCA: ' . $marca[$i]), 0, 1);
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'MODELO: ' . $insumos[$i]), 0, 1);
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'SERIE: ' . $codigos[$i]), 0, 1);
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'NOMBRE DEL EQUIPO: '), 0, 1);
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'SERVICIO: '), 0, 1);
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'UBICACIÓN: '), 0, 1);
+    
+    $pdf->Ln(3);
 
-    $pdf->Ln();
+    $pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'PERSONAL DE TI QUE ENTREGA: ' . $usuario), 0, 1);
+    
+    $pdf->Ln(3);
+    
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'RECIBIDO POR: '), 0, 1);
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'RUT: '), 0, 1);
+    $pdf->Cell(0, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'FIRMA: '), 0, 1);
+    
+    $pdf->Ln(3);
+
+    $pdf->Cell(0, 0, '', 'T');
+    $pdf->Ln(5);
 }
+
 
 $nombreArchivo = 'retiro_insumos_' . date('Ymd_His') . '.pdf';
 $rutaArchivo = 'temp/' . $nombreArchivo;
