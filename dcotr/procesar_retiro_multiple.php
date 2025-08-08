@@ -92,16 +92,14 @@ for ($i = 0; $i < count($codigos); $i++) {
     $ubicaciones_finales[] = $ubicaciones[$i];
 }
 
-// Convertir los arrays a strings separados por " / "
 $tipos_equipo_str = implode(' / ', $tipos_equipo);
 $marcas_str = implode(' / ', $marcas);
 $modelos_str = implode(' / ', $modelos);
 $series_str = implode(' / ', $series);
 $ubicaciones_str = implode(' / ', $ubicaciones_finales);
 
-// Imprimir solo una vez la tabla
 $pdf->SetFont('Arial','',10);
-$pdf->SetFillColor(240, 240, 240);
+$pdf->SetFillColor(255, 255, 255);
 
 $pdf->Cell(60, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'TIPO DE EQUIPO:'), 1, 0, 'L', true);
 $pdf->Cell(130, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $tipos_equipo_str), 1, 1);
