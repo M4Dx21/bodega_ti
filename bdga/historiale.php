@@ -128,13 +128,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
             <div class="main-title">Historal de cirugias</div>
             <div class="sub-title">Hospital Clínico Félix Bulnes</div>
         </div>
-        <button id="cuenta-btn" onclick="toggleAccountInfo()"><?php echo $_SESSION['nombre']; ?></button>
-        <div id="accountInfo" style="display: none;">
-            <p><strong>Usuario: </strong><?php echo $_SESSION['nombre']; ?></p>
-            <form action="logout.php" method="POST">
-                <button type="submit" class="logout-btn">Salir</button>
-            </form>
-            <button type="button" class="volver-btn" onclick="window.location.href='eleccion.php'">Volver</button>
+        <div class="user-controls">
+            <button id="cuenta-btn" onclick="toggleAccountInfo()"><?php echo $_SESSION['nombre']; ?></button>
+            <div id="accountInfo" style="display: none;">
+                <p><strong>Usuario: </strong><?php echo $_SESSION['nombre']; ?></p>
+                <form action="logout.php" method="POST">
+                    <button type="submit" class="logout-btn">Salir</button>
+                </form>
+            </div>
+            <button type="button" class="volver-btn" onclick="window.history.go(-1);">Volver</button>
         </div>
     </div>
 </head>

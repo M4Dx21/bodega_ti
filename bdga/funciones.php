@@ -1,7 +1,7 @@
 <?php
 require 'db.php';
 
-function obtenerInsumosBajoStock($conn, $umbral = 0) {
+function obtenerInsumosBajoStock($conn, $umbral = 1) {
     $sql = "SELECT 
                 insumo, 
                 SUM(stock) AS stock_total, 
