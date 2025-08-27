@@ -1,14 +1,14 @@
 <?php
 require 'db.php';
 
-function obtenerInsumosBajoStock($conn, $umbral = 1) {
+function obtenerInsumosBajoStock($conn, $umbral = 10) {
     $sql = "SELECT 
                 insumo, 
                 SUM(stock) AS stock_total, 
                 GROUP_CONCAT(DISTINCT ubicacion SEPARATOR ', ') AS ubicaciones
             FROM componentes
             GROUP BY insumo
-            HAVING stock_total < ?";
+            HAVING stock_total <= ?";
     
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $umbral);

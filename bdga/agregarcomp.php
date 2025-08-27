@@ -200,6 +200,11 @@ if (isset($_POST['agregar'])) {
         );
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
+        $stmt_hist = $conn->prepare("INSERT INTO historial (num_serie, cantidad, fecha) VALUES (?, ?, ?)");
+        $stmt_hist->bind_param("sis", $codigo, $stock, $fecha_ingreso);
+        $stmt_hist->execute();
+        $stmt_hist->close();
+
         $mensaje = 'Insumo agregado correctamente.';
     }
 
@@ -315,7 +320,7 @@ if ($result->num_rows > 0) {
                     <button type="submit" class="logout-btn">Salir</button>
                 </form>
             </div>
-            <button type="button" class="volver-btn" onclick="window.history.go(-1);">Volver</button>
+            <button type="button" class="volver-btn" onclick="window.history.go(-2);">Volver</button>
         </div>
     </div>
     <script src="https://unpkg.com/html5-qrcode"></script>

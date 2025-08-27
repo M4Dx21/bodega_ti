@@ -1,135 +1,61 @@
-<!-- en esta es necesario tener un control de las cosas que sacan de la bodega, incluida la fecha de salida y los datos del pc o insumo que se saca-->
-
 <?php
 session_start();
 include 'db.php';
-$nombre_usuario_filtro = isset($_GET['codigo']) ? trim($conn->real_escape_string($_GET['codigo'])) : '';
+
+// --- Filtros y paginación ---
+$filtro = isset($_GET['codigo']) ? trim($conn->real_escape_string($_GET['codigo'])) : '';
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
-$sql_base = "FROM cirugias WHERE 1";
-if (!empty($nombre_usuario_filtro)) {
+$sql_base = "FROM salidas WHERE 1";
+if (!empty($filtro)) {
     $sql_base .= " AND (
-        cod_cirugia LIKE '%$nombre_usuario_filtro%' OR 
-        cirugia LIKE '%$nombre_usuario_filtro%' OR
-        rut_paciente LIKE '%$nombre_usuario_filtro%'
+        num_serie LIKE '%$filtro%' OR 
+        responsable LIKE '%$filtro%' OR
+        observaciones LIKE '%$filtro%'
     )";
 }
 
 $sql_total = "SELECT COUNT(*) as total " . $sql_base;
-$sql_final = "SELECT * " . $sql_base . " ORDER BY id DESC LIMIT $cantidad_por_pagina OFFSET $offset";
+$sql_final = "SELECT * " . $sql_base . " ORDER BY fecha_salida DESC LIMIT $cantidad_por_pagina OFFSET $offset";
 
 $total_resultado = mysqli_query($conn, $sql_total);
 $total_filas = mysqli_fetch_assoc($total_resultado)['total'];
 $total_paginas = ceil($total_filas / $cantidad_por_pagina);
 
 $resultado = mysqli_query($conn, $sql_final);
-$personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+$salidas = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 
+// --- Autocompletado ---
 if (isset($_GET['query'])) {
     $query = $conn->real_escape_string($_GET['query']);
-    $sql = "SELECT cod_cirugia, cirugia FROM cirugias 
-            WHERE cod_cirugia LIKE '%$query%' OR cirugia LIKE '%$query%' 
+    $sql = "SELECT num_serie, observaciones FROM salidas 
+            WHERE num_serie LIKE '%$query%' OR observaciones LIKE '%$query%' 
             LIMIT 10";
     $result = $conn->query($sql);
     $suggestions = [];
     while ($row = $result->fetch_assoc()) {
-        $suggestions[] = $row['codigo'] . " - " . $row['insumo'];
+        $suggestions[] = $row['num_serie'] . " - " . $row['observaciones'];
     }
     header('Content-Type: application/json');
     echo json_encode($suggestions);
     exit();
 }
-
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["aceptar"])) {
-    $id = $_POST["id"]; 
-
-    if ($stmt = $conn->prepare("UPDATE cirugias SET estado = 'aceptada' WHERE id = ?")) {
-        $stmt->bind_param("i", $id);
-        if (!$stmt->execute()) {
-            die("Error actualizando estado cirugía: " . $stmt->error);
-        }
-    } else {
-        die("Error preparando update cirugía: " . $conn->error);
-    }
-
-    if ($stmt_detalle = $conn->prepare("SELECT insumos FROM cirugias WHERE id = ?")) {
-        $stmt_detalle->bind_param("i", $id);
-        $stmt_detalle->execute();
-        $result_detalle = $stmt_detalle->get_result();
-
-        if ($fila = $result_detalle->fetch_assoc()) {
-            $lista_insumos = $fila['insumos'];
-            $insumos_array = explode(',', $lista_insumos);
-
-            foreach ($insumos_array as $insumo_cantidad) {
-                if (preg_match('/^(.*?)\s*\(x(\d+)\)$/i', trim($insumo_cantidad), $matches)) {
-                    $nombre_insumo = trim($matches[1]);
-                    $cantidad = (int)$matches[2];
-
-                    if ($stmt_resta_stock = $conn->prepare("UPDATE componentes SET stock = stock - ? WHERE LOWER(insumo) = LOWER(?)")) {
-                        $stmt_resta_stock->bind_param("is", $cantidad, $nombre_insumo);
-                        $stmt_resta_stock->execute();
-                        $stmt_resta_stock->close();
-                    } else {
-                        die("Error preparando update stock: " . $conn->error);
-                    }
-                }
-            }
-        }
-        $stmt_detalle->close();
-    } else {
-        die("Error preparando select insumos: " . $conn->error);
-    }
-
-    $fecha_decision = date('Y-m-d H:i:s');
-    if ($stmt_pedicion = $conn->prepare("INSERT INTO historial (id_solicitud, estado, fecha) VALUES (?, 'aceptada', ?)")) {
-        $stmt_pedicion->bind_param("is", $id, $fecha_decision);
-        $stmt_pedicion->execute();
-        $stmt_pedicion->close();
-    } else {
-        die("Error preparando insert historial: " . $conn->error);
-    }
-
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit();
-}
-
-
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
-    $id = $_POST["id"];
-
-    if ($stmt = $conn->prepare("UPDATE cirugias SET estado = 'rechazada' WHERE id = ?")) { 
-        $stmt->bind_param("i", $id);
-        if ($stmt->execute()) {
-            $fecha_decision = date('Y-m-d H:i:s'); 
-            $stmt_pedicion = $conn->prepare("INSERT INTO historial (id_solicitud, estado, fecha) VALUES (?, 'rechazada', ?)");
-            $stmt_pedicion->bind_param("is", $id, $fecha_decision);
-            $stmt_pedicion->execute();
-            
-            header("Location: ".$_SERVER['PHP_SELF']);
-            exit();
-        } else {
-            $mensaje = "<div class='msg error'><span class='icon'>&#10060;</span> Error al rechazar la solicitud: " . $stmt->error . "</div>";
-        }
-    }
-}
-
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <link rel="stylesheet" href="asset/styles.css">
     <meta charset="UTF-8">
-    <title>Administración de Insumos</title>
+    <title>Control de Salidas - Bodega</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
-            <div class="main-title">Historal de cirugias</div>
-            <div class="sub-title">Hospital Clínico Félix Bulnes</div>
+            <div class="main-title">Control de Salidas</div>
+            <div class="sub-title">Bodega Central</div>
         </div>
         <div class="user-controls">
             <button id="cuenta-btn" onclick="toggleAccountInfo()"><?php echo $_SESSION['nombre']; ?></button>
@@ -147,89 +73,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
     <div class="container">
         <div class="filters">
             <form method="GET" action="">
-                <label for="codigo">Insumo:</label>
+                <label for="codigo">Buscar:</label>
                 <div class="input-sugerencias-wrapper">
                     <input type="text" id="codigo" name="codigo" autocomplete="off"
-                        placeholder="Filtrar por codigo, cirugia o paciente..."
-                        value="<?php echo htmlspecialchars($nombre_usuario_filtro); ?>">
+                        placeholder="Filtrar por número de serie, responsable o detalle..."
+                        value="<?php echo htmlspecialchars($filtro); ?>">
                     <div id="sugerencias" class="sugerencias-box"></div>
                 </div>
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
-                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='peticiones.php'">Limpiar Filtros</button>
+                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='salidas.php'">Limpiar Filtros</button>
                 </div>
             </form>
         </div>
-        <?php if (!empty($personas_dentro)): ?>
-            <h2>Lista de cirugias</h2>
+        <?php if (!empty($salidas)): ?>
+            <h2>Historial de Salidas</h2>
             <table>
                 <tr>
-                    <th>Código de Cirugía</th>
-                    <th>Cirugía</th>
-                    <th>Pabellón</th>
-                    <th>Cirujano</th>
-                    <th>Equipo</th>
-                    <th>Paciente</th>
-                    <th>Insumos</th>
-                    <th>Estado</th>
-                    <th>Fecha Solicitud</th>
-                    <th>Resolución</th>
+                    <th>ID</th>
+                    <th>N° Serie</th>
+                    <th>Cantidad</th>
+                    <th>Fecha de Salida</th>
+                    <th>Responsable</th>
+                    <th>Observaciones</th>
                 </tr>
-                <?php foreach ($personas_dentro as $cirugia): ?>
-                    <?php 
-                        $estado_class = '';
-                        switch ($cirugia['estado']) {
-                            case 'en proceso':
-                                $estado_class = 'estado-en-proceso';
-                                break;
-                            case 'terminada':
-                                $estado_class = 'estado-terminada';
-                                break;
-                            case 'aceptada':
-                                $estado_class = 'estado-aceptada';
-                                break;
-                            case 'rechazada':
-                                $estado_class = 'estado-rechazada';
-                                break;
-                        }
-                        ?>
+                <?php foreach ($salidas as $salida): ?>
                 <tr>
-                    <td><?= htmlspecialchars($cirugia['cod_cirugia']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['cirugia']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['pabellon']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['cirujano']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['equipo']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['rut_paciente']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['insumos']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['estado']) ?></td>
-                    <td><?= htmlspecialchars($cirugia['fecha_sol']); ?></td>
-                    <td>
-                        <?php if ($cirugia['estado'] == 'en proceso'): ?>
-                            <form method="POST" style="display: inline;">
-                                <input type="hidden" name="id" value="<?php echo $cirugia['id']; ?>">
-                                <input type="hidden" name="nro_serie" value="<?php echo $cirugia['id']; ?>">
-                                <button type="submit" name="aceptar" class="aceptar-btn-table">Aceptar</button>
-                            </form>
-                            <form method="POST" style="display: inline;">
-                                <input type="hidden" name="id" value="<?php echo $cirugia['id']; ?>">
-                                <input type="hidden" name="nro_serie" value="<?php echo $cirugia['id']; ?>">
-                                <button type="submit" name="rechazar" class="rechazar-btn-table">Rechazar</button>
-                            </form>
-                            <?php elseif ($cirugia['estado'] == 'en devolucion'): ?>
-                                <form method="GET" action="devolucion_insumos.php" style="display: inline;">
-                                    <input type="hidden" name="id" value="<?php echo $cirugia['id']; ?>">
-                                    <button type="submit" class="devolver-btn-table">Devolucion</button>
-                                </form>
-                        <?php endif; ?> 
-                    </td>
+                    <td><?= htmlspecialchars($salida['id']) ?></td>
+                    <td><?= htmlspecialchars($salida['num_serie']) ?></td>
+                    <td><?= htmlspecialchars($salida['cantidad']) ?></td>
+                    <td><?= htmlspecialchars($salida['fecha_salida']) ?></td>
+                    <td><?= htmlspecialchars($salida['responsable']) ?></td>
+                    <td><?= htmlspecialchars($salida['observaciones']) ?></td>
                 </tr>
                 <?php endforeach; ?>
             </table>
             <form method="GET" style="margin-bottom: 10px;">
                 <label for="cantidad">Mostrar:</label>
                 <select name="cantidad" onchange="this.form.submit()">
-                    <?php foreach ([10, 20, 30, 40, 50] as $cantidad): ?>
-                        <option value="<?= $cantidad ?>" <?= $cantidad_por_pagina == $cantidad ? 'selected' : '' ?>><?= $cantidad ?></option>
+                    <?php foreach ([10, 20, 30, 40, 50] as $c): ?>
+                        <option value="<?= $c ?>" <?= $cantidad_por_pagina == $c ? 'selected' : '' ?>><?= $c ?></option>
                     <?php endforeach; ?>
                 </select>
                 <input type="hidden" name="pagina" value="1">
@@ -270,12 +153,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
     </div>
 
     <script>
-        div.addEventListener("click", () => {
-            input.value = item.split(" - ")[0];
-            sugerenciasBox.innerHTML = "";
-            sugerenciasBox.style.display = "none";
-        });
-
         document.addEventListener("DOMContentLoaded", function() {
             const input = document.getElementById("codigo");
             const sugerenciasBox = document.getElementById("sugerencias");
@@ -289,7 +166,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["rechazar"])) {
                     return;
                 }
 
-                fetch(`gestion_cirugias.php?query=${encodeURIComponent(query)}`)
+                fetch(`salidas.php?query=${encodeURIComponent(query)}`)
                     .then(res => res.json())
                     .then(data => {
                         sugerenciasBox.innerHTML = "";
