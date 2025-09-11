@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
         if ($result->num_rows > 0) {
             $_SESSION['rut'] = $rut;
             $_SESSION['nombre'] = $result->fetch_assoc()['nombre'];
-            header("Location: eleccion.php");
+            header("Location: agregarcomp.php");
             exit();
         } else {
             $error = "Credenciales incorrectas. Intenta nuevamente.";

@@ -2,7 +2,6 @@
 session_start();
 include 'db.php';
 
-// --- Filtros y paginación ---
 $filtro = isset($_GET['codigo']) ? trim($conn->real_escape_string($_GET['codigo'])) : '';
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
@@ -28,7 +27,6 @@ $total_paginas = ceil($total_filas / $cantidad_por_pagina);
 $resultado = mysqli_query($conn, $sql_final);
 $salidas = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 
-// --- Autocompletado ---
 if (isset($_GET['query'])) {
     $query = $conn->real_escape_string($_GET['query']);
     $sql = "SELECT num_serie, observaciones FROM salidas 
@@ -71,6 +69,17 @@ if (isset($_GET['query'])) {
 </head>
 <body>
     <div class="container">
+                <div class="botonera">
+                    <form action="agregarcomp.php" method="post">
+                        <button type="submit">🗄️ Agregar Insumos</button>
+                    </form>
+
+                    <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
+
+                    <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
+                    <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
+               </div>
+
         <div class="filters">
             <form method="GET" action="">
                 <label for="codigo">Buscar:</label>

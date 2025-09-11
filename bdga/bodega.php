@@ -59,14 +59,6 @@ if (isset($_GET['query'])) {
     <meta charset="UTF-8">
     <title>Administración de Insumos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            .botones-filtros {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                flex-wrap: wrap;
-            }
-    </style>
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
@@ -87,7 +79,23 @@ if (isset($_GET['query'])) {
     </div>
 </head>
 <body>
+
     <div class="container">
+            <div class="botonera">
+                <form action="agregarcomp.php" method="post">
+                    <button type="submit">🗄️ Agregar Insumos</button>
+                </form>
+
+                <form action="exportar_excel.php" method="post">
+                    <button type="submit">📤 Exportar Excel</button>
+                </form>
+
+                <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
+
+                <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
+                <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
+            </div>
+
         <div class="filters">
             <form method="GET" action="">
                 <label for="codigo">Insumo:</label>

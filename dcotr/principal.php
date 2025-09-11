@@ -20,6 +20,7 @@ if (isset($_GET['query'])) {
     echo json_encode($suggestions);
     exit();
 }
+
 $mensaje = isset($_GET['mensaje']) ? urldecode($_GET['mensaje']) : '';
 $editando = false;
 $componente_edit = null;

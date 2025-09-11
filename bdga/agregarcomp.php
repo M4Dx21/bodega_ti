@@ -320,7 +320,7 @@ if ($result->num_rows > 0) {
                     <button type="submit" class="logout-btn">Salir</button>
                 </form>
             </div>
-            <button type="button" class="volver-btn" onclick="window.history.go(-2);">Volver</button>
+            <button type="button" class="volver-btn" onclick="window.history.go(-1);">Volver</button>
         </div>
     </div>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -329,6 +329,14 @@ if ($result->num_rows > 0) {
 </head>
 <body>
     <div class="container">
+
+        <div class="botonera">
+            <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
+            <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
+            <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
+            <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
+        </div>
+
         <div id="mensaje-container">
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>
@@ -561,21 +569,12 @@ input.addEventListener("input", function() {
         text-align: center;
     }
 
-
     @keyframes fadeOut {
         0% { opacity: 1; }
         90% { opacity: 1; }
         100% { opacity: 0; display: none; }
     }
 
-    .btn-acciones-group {
-        display: flex;
-        flex-direction: row;
-        gap: 3px;
-        justify-content: center;
-        align-items: center;
-        flex-wrap: wrap;
-    }
     .btn-pequeno {
         padding: 12px 20px;
         font-size: 14px;
@@ -591,6 +590,7 @@ input.addEventListener("input", function() {
     .btn-pequeno:hover {
         background-color:rgb(4, 65, 129);
     }
+    
 </style>
 </body>
 </html>

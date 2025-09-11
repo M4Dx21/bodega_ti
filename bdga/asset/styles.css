@@ -96,57 +96,30 @@ input, textarea, button, select {
    border-radius: 10px;
    font-size: 13px;
 }
-.btn-alertas {
-      position: relative;
-      background-color: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-      border-radius: 8px;
-      padding: 12px 20px;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 14px;
+.btn-alerta {
+    background-color: #a82020;
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .3s, transform .2s;
 }
 
-.btn-alertas:hover {
-      background-color: #f5c6cb;
-}
-
-.alert-badge {
-      background-color: #dc3545;
-      color: white;
-      width: 18px;
-      height: 18px;
-      font-size: 11px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-}
-
-.alert-panel {
-      display: none;
-      position: absolute;
-      top: 35px;
-      right: 0;
-      width: 280px;
-      background: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      border-radius: 8px;
-      z-index: 1000;
-      padding: 12px;
+.btn-alerta:hover {
+    background-color: #990000;
+    transform: translateY(-2px);
 }
 
 .botonera {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 20px;
-      max-width: 600px;
-      margin: 30px auto;
-      border-radius: 8px;
+      max-width: 800px;
+      margin: 20px auto;
+      border-radius: 10px;
 }
 .devolver-btn-table {
     background-color: #008CBA;
@@ -166,6 +139,7 @@ button {
    color: white;
    border: none;
    cursor: pointer;
+   transform: translateY(-2px);
 }
 
 button:hover {
