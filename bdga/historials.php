@@ -63,7 +63,6 @@ if (isset($_GET['query'])) {
                     <button type="submit" class="logout-btn">Salir</button>
                 </form>
             </div>
-            <button type="button" class="volver-btn" onclick="window.history.go(-1);">Volver</button>
         </div>
     </div>
 </head>

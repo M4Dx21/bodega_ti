@@ -86,7 +86,6 @@ $enum_formatos = obtenerValoresEnum($conn, 'componentes', 'estado');
 $enum_ubicaciones = obtenerValoresEnum($conn, 'componentes', 'ubicacion');
 
 if (isset($_POST['agregar'])) {
-
     $archivo_nombre = null;
     $mensaje_archivo = '';
 
@@ -100,7 +99,6 @@ if (isset($_POST['agregar'])) {
             if (!is_dir($destino_carpeta)) mkdir($destino_carpeta, 0775, true);
 
             $archivo_nombre = uniqid('comprobante_') . '.' . $ext;
-
             if (!move_uploaded_file($_FILES['comprobante']['tmp_name'], $destino_carpeta . $archivo_nombre)) {
                 $mensaje_archivo = 'Error al mover el archivo.';
                 $archivo_nombre = null;
@@ -116,90 +114,80 @@ if (isset($_POST['agregar'])) {
     $especialidad   = $_POST['categoria'];
     $formato        = $_POST['marca'];
     $estado         = $_POST['estado'];
-    $ubicacion = $_POST['ubicacion_select'];
+    $ubicacion      = $_POST['ubicacion_select'];
+    $nro_orden      = $_POST['nro_orden'];
+    $provedor      = $_POST['provedor'];
+
     if ($ubicacion === 'otro' && !empty($_POST['otra_ubicacion'])) {
         $ubicacion = trim($_POST['otra_ubicacion']);
-
         agregarValorEnumSiNoExiste($conn, 'componentes', 'ubicacion', $ubicacion);
     }
-    $caracteristicas= $_POST['caracteristicas'];
-    $observaciones  = $_POST['observaciones'];
-    $precio_unitario = $_POST["precio"];
-    $precio_total = $precio_unitario * $stock;
-    $garantia       = $_POST['garantia'];
-    $fecha_ingreso  = date('Y-m-d H:i:s');
 
-    $consulta_existente = "SELECT 1 FROM componentes WHERE codigo = ?";
-    $stmt = mysqli_prepare($conn, $consulta_existente);
-    mysqli_stmt_bind_param($stmt, 's', $codigo);
-    mysqli_stmt_execute($stmt);
-    $existe = mysqli_stmt_get_result($stmt)->num_rows > 0;
-    mysqli_stmt_close($stmt);
+    $caracteristicas  = $_POST['caracteristicas'];
+    $observaciones    = $_POST['observaciones'];
+    $precio_unitario  = (int)$_POST["precio"];
+    $precio_total     = $precio_unitario * $stock;
+    $garantia         = $_POST['garantia'];
+    $fecha_ingreso    = date('Y-m-d H:i:s');
+
+    $consulta_existente = "SELECT id, stock, precio FROM componentes WHERE codigo = ?";
+    $stmt = $conn->prepare($consulta_existente);
+    $stmt->bind_param("s", $codigo);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $existe = $res->num_rows > 0;
+    $fila_existente = $res->fetch_assoc();
+    $stmt->close();
 
     if ($existe) {
-        $consulta_datos = "SELECT stock, precio FROM componentes WHERE codigo = ?";
-        $stmt_datos = mysqli_prepare($conn, $consulta_datos);
-        mysqli_stmt_bind_param($stmt_datos, 's', $codigo);
-        mysqli_stmt_execute($stmt_datos);
-        $resultado_datos = mysqli_stmt_get_result($stmt_datos);
-        $fila_datos = mysqli_fetch_assoc($resultado_datos);
-        mysqli_stmt_close($stmt_datos);
+        $nuevo_stock = $fila_existente['stock'] + $stock;
+        $nuevo_precio = $fila_existente['precio'] + $precio_total;
 
-        $stock_actual = (int)$fila_datos['stock'];
-        $precio_actual = (int)$fila_datos['precio'];
-
-        $precio_unitario_nuevo = (int)$_POST['precio'];
-        $stock_nuevo = (int)$_POST['stock'];
-        $precio_total_nuevo = $precio_unitario_nuevo * $stock_nuevo;
-
-        $nuevo_stock_total = $stock_actual + $stock_nuevo;
-        $nuevo_precio_total = $precio_actual + $precio_total_nuevo;
-
-        $sql = "UPDATE componentes 
-                SET insumo = ?, stock = ?, categoria = ?, marca = ?, estado = ?,
-                    ubicacion = ?, observaciones = ?, precio = ?, caracteristicas = ?, fecha_ingreso = ?, garantia = ?"
-                . ($archivo_nombre ? ", comprobante = ?" : "")
-            . " WHERE codigo = ?";
-
-        $stmt = mysqli_prepare($conn, $sql);
+        $sql = "UPDATE componentes SET 
+                    insumo=?, stock=?, categoria=?, marca=?, estado=?, ubicacion=?, 
+                    observaciones=?, caracteristicas=?, precio=?, garantia=?, nro_orden=?, provedor=?, fecha_ingreso=?"
+                    . ($archivo_nombre ? ", comprobante=?" : "") . 
+                " WHERE codigo=?";
 
         if ($archivo_nombre) {
-            mysqli_stmt_bind_param(
-                $stmt,
-                'sisssssssssss',
-                $nombre, $nuevo_stock_total, $especialidad, $formato, $estado,
-                $ubicacion, $observaciones, $nuevo_precio_total, $caracteristicas, $fecha_ingreso, $garantia,
-                $archivo_nombre,
-                $codigo
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "sissssssisssss",
+                $nombre, $nuevo_stock, $especialidad, $formato, $estado, $ubicacion,
+                $observaciones, $caracteristicas, $nuevo_precio, $garantia,
+                $nro_orden, $provedor, $fecha_ingreso,
+                $archivo_nombre, $codigo
             );
         } else {
-            mysqli_stmt_bind_param(
-                $stmt,
-                'sissssssssss',
-                $nombre, $nuevo_stock_total, $especialidad, $formato, $estado,
-                $ubicacion, $observaciones, $nuevo_precio_total, $caracteristicas, $fecha_ingreso, $garantia,
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "sissssssissss",
+                $nombre, $nuevo_stock, $especialidad, $formato, $estado, $ubicacion,
+                $observaciones, $caracteristicas, $nuevo_precio, $garantia,
+                $nro_orden, $provedor, $fecha_ingreso,
                 $codigo
             );
         }
+        $stmt->execute();
+        $stmt->close();
 
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
         $mensaje = 'Insumo actualizado correctamente.';
     } else {
-        $sql = "INSERT INTO componentes
-                (codigo, insumo, stock, categoria, marca, estado, ubicacion, observaciones,
-                fecha_ingreso, caracteristicas, precio, garantia, comprobante)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        $sql = "INSERT INTO componentes 
+                (codigo, insumo, stock, categoria, marca, estado, ubicacion, observaciones, 
+                fecha_ingreso, caracteristicas, precio, garantia, comprobante, nro_orden, provedor) 
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
-        $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param(
-            $stmt,
-            'ssissssssssss',
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param(
+            "ssissssssisssss",
             $codigo, $nombre, $stock, $especialidad, $formato, $estado, $ubicacion,
-            $observaciones, $fecha_ingreso, $caracteristicas, $precio_total, $garantia, $archivo_nombre
+            $observaciones, $fecha_ingreso, $caracteristicas, $precio_total, $garantia,
+            $archivo_nombre, $nro_orden, $provedor
         );
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
+        $stmt->execute();
+        $stmt->close();
+
         $stmt_hist = $conn->prepare("INSERT INTO historial (num_serie, cantidad, fecha) VALUES (?, ?, ?)");
         $stmt_hist->bind_param("sis", $codigo, $stock, $fecha_ingreso);
         $stmt_hist->execute();
@@ -209,7 +197,7 @@ if (isset($_POST['agregar'])) {
     }
 
     $mensaje_final = $mensaje_archivo ? $mensaje_archivo : $mensaje;
-    header('Location: ' . $_SERVER['PHP_SELF'] . '?mensaje=' . urlencode($mensaje_final));
+    header("Location: " . $_SERVER['PHP_SELF'] . "?mensaje=" . urlencode($mensaje_final));
     exit();
 }
 
@@ -226,59 +214,64 @@ if (isset($_GET['editar'])) {
 }
 
 if (isset($_POST['guardar_cambios'])) {
-    $id             = $_POST["id"];
-    $nombre         = $_POST["insumo"];
-    $codigo         = $_POST["codigo"];
-    $cantidad       = $_POST["stock"];
-    $especialidad   = $_POST["categoria"];
-    $formato        = $_POST["marca"];
-    $estado         = $_POST["estado"];
-    $ubicacion = $_POST['ubicacion_select'];
+    $id            = $_POST["id"];
+    $nombre        = $_POST["insumo"];
+    $codigo        = $_POST["codigo"];
+    $stock         = (int)$_POST["stock"];
+    $especialidad  = $_POST["categoria"];
+    $formato       = $_POST["marca"];
+    $estado        = $_POST["estado"];
+    $ubicacion     = $_POST['ubicacion_select'];
+    $nro_orden     = $_POST["nro_orden"];
+    $provedor     = $_POST["provedor"];
+
     if ($ubicacion === 'otro' && !empty($_POST['otra_ubicacion'])) {
         $ubicacion = trim($_POST['otra_ubicacion']);
-
         agregarValorEnumSiNoExiste($conn, 'componentes', 'ubicacion', $ubicacion);
     }
-    $observaciones  = $_POST["observaciones"];
-    $precio         = $_POST["precio"];
-    $garantia       = $_POST["garantia"];
-    $fecha_ingreso  = date('Y-m-d H:i:s');
+
+    $observaciones   = $_POST["observaciones"];
+    $precio_unitario = (int)$_POST["precio"];
+    $precio_total    = $precio_unitario * $stock;
+    $garantia        = $_POST["garantia"];
+    $fecha_ingreso   = date('Y-m-d H:i:s');
 
     $archivo_nombre = null;
-
     if (isset($_FILES['comprobante']) && $_FILES['comprobante']['error'] === UPLOAD_ERR_OK) {
-        $permitidos = ['pdf', 'doc', 'docx', 'xlsx', 'xls', 'jpg', 'png'];
+        $permitidos = ['pdf','doc','docx','xlsx','xls','jpg','png'];
         $nombre_original = $_FILES['comprobante']['name'];
         $ext = strtolower(pathinfo($nombre_original, PATHINFO_EXTENSION));
-
         if (in_array($ext, $permitidos)) {
             $destino_carpeta = __DIR__ . '/comprobantes/';
             if (!is_dir($destino_carpeta)) mkdir($destino_carpeta, 0775, true);
-
             $archivo_nombre = uniqid('comprobante_') . '.' . $ext;
             move_uploaded_file($_FILES['comprobante']['tmp_name'], $destino_carpeta . $archivo_nombre);
         }
     }
 
     if ($archivo_nombre) {
-        $stmt = $conn->prepare("UPDATE componentes SET
-            insumo = ?, stock = ?, categoria = ?, marca = ?, estado = ?, ubicacion = ?,
-            observaciones = ?, fecha_ingreso = ?, garantia = ?, comprobante = ?, precio = ?
-            WHERE id = ?");
+        $sql = "UPDATE componentes SET 
+                    insumo=?, stock=?, categoria=?, marca=?, estado=?, ubicacion=?, 
+                    observaciones=?, fecha_ingreso=?, garantia=?, comprobante=?, precio=?, nro_orden=?, provedor=? 
+                WHERE id=?";
+        $stmt = $conn->prepare($sql);
         $stmt->bind_param(
-            "sissssssssi",
-            $nombre, $cantidad, $especialidad, $formato, $estado, $ubicacion,
-            $observaciones, $fecha_ingreso, $garantia, $archivo_nombre, $id, $precio_total
+            "sissssssssissi",
+            $nombre, $stock, $especialidad, $formato, $estado, $ubicacion,
+            $observaciones, $fecha_ingreso, $garantia, $archivo_nombre, $precio_total,
+            $nro_orden, $provedor, $id
         );
     } else {
-        $stmt = $conn->prepare("UPDATE componentes SET
-            insumo = ?, stock = ?, categoria = ?, marca = ?, estado = ?, ubicacion = ?,
-            observaciones = ?, fecha_ingreso = ?, garantia = ?, precio = ?
-            WHERE id = ?");
+        $sql = "UPDATE componentes SET 
+                    insumo=?, stock=?, categoria=?, marca=?, estado=?, ubicacion=?, 
+                    observaciones=?, fecha_ingreso=?, garantia=?, precio=?, nro_orden=?, provedor=? 
+                WHERE id=?";
+        $stmt = $conn->prepare($sql);
         $stmt->bind_param(
-            "sisssssssis",
-            $nombre, $cantidad, $especialidad, $formato, $estado, $ubicacion,
-            $observaciones, $fecha_ingreso, $garantia, $id, $precio_total
+            "sisssssssiisi",
+            $nombre, $stock, $especialidad, $formato, $estado, $ubicacion,
+            $observaciones, $fecha_ingreso, $garantia, $precio_total,
+            $nro_orden, $provedor, $id
         );
     }
 
@@ -320,7 +313,6 @@ if ($result->num_rows > 0) {
                     <button type="submit" class="logout-btn">Salir</button>
                 </form>
             </div>
-            <button type="button" class="volver-btn" onclick="window.history.go(-1);">Volver</button>
         </div>
     </div>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -408,6 +400,12 @@ if ($result->num_rows > 0) {
                     <input type="file" name="comprobante" id="comprobante" class="file-upload-input" accept=".pdf,.doc,.docx,.xlsx,.xls,.jpg,.png">
                     <span id="file-name" class="file-name-placeholder">Ningún archivo seleccionado</span>
                 </div>
+                
+                <input type="text" id="nro_orden" name="nro_orden" placeholder="Numero de orden"
+                    value="<?= $editando ? htmlspecialchars($componente_edit['nro_orden']) : '' ?>">
+                
+                <input type="text" id="provedor" name="provedor" placeholder="Origen Insumo"
+                    value="<?= $editando ? htmlspecialchars($componente_edit['provedor']) : '' ?>">
 
                 <input type="text" id="observaciones" name="observaciones" placeholder="Observaciones"
                     value="<?= $editando ? htmlspecialchars($componente_edit['observaciones']) : '' ?>">
@@ -467,29 +465,42 @@ if ($result->num_rows > 0) {
         console.log("Código escaneado:", inputCodigo.value);
         }
     });
-    
-    function buscarComponente(codigo) {
-    if (codigo.trim() === "") return;
 
-    fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
-        .then(response => response.json())
-        .then(data => {
-            if (data.encontrado) {
-                document.querySelector('input[name="codigo"]').value = data.codigo;
-                document.querySelector('input[name="insumo"]').value = data.insumo;
-                document.querySelector('input[name="stock"]').value = data.stock ?? '';
-                document.querySelector('input[name="marca"]').value = data.marca;
-                document.querySelector('input[name="categoria"]').value = data.categoria;
-                document.querySelector('select[name="ubicacion"]').value = data.ubicacion;
-                document.querySelector('select[name="estado"]').value = data.estado;
-                alert("Insumo detectado: " + data.insumo);
-            } else {
-                alert("El insumo no se encuentra en la base de datos.");
-            }
-        })
-        .catch(error => {
-            alert("Error al buscar el insumo: " + error);
-        });
+    function setValue(selector, value) {
+        const input = document.querySelector(selector);
+        if (input) {
+            input.value = value ?? '';
+        }
+    }
+
+    function buscarComponente(codigo) {
+        if (codigo.trim() === "") return;
+
+        fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
+            .then(response => response.json())
+            .then(data => {
+                if (data.encontrado) {
+                    setValue('input[name="codigo"]', data.codigo);
+                    setValue('input[name="insumo"]', data.insumo);
+                    setValue('input[name="stock"]', data.stock);
+                    setValue('input[name="caracteristicas"]', data.caracteristicas);
+                    setValue('input[name="precio"]', data.precio);
+                    setValue('input[name="marca"]', data.marca);
+                    setValue('input[name="categoria"]', data.categoria);
+                    setValue('select[name="ubicacion"]', data.ubicacion);
+                    setValue('select[name="estado"]', data.estado);
+                    setValue('input[name="provedor"]', data.provedor);
+                    setValue('input[name="nro_orden"]', data.nro_orden);
+                    setValue('input[name="observaciones"]', data.observaciones);
+
+                    alert("Insumo detectado: " + data.insumo);
+                } else {
+                    alert("El insumo no se encuentra en la base de datos.");
+                }
+            })
+            .catch(error => {
+                alert("Error al buscar el insumo: " + error);
+            });
     }
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -590,7 +601,7 @@ input.addEventListener("input", function() {
     .btn-pequeno:hover {
         background-color:rgb(4, 65, 129);
     }
-    
+
 </style>
 </body>
 </html>

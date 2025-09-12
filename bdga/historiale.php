@@ -2,14 +2,12 @@
 session_start();
 include 'db.php';
 
-// Filtros y paginación
 $filtro = isset($_GET['codigo']) ? trim($conn->real_escape_string($_GET['codigo'])) : '';
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
-// Base query
 $sql_base = "FROM historial WHERE 1";
 if (!empty($filtro)) {
     $sql_base .= " AND (
@@ -19,13 +17,11 @@ if (!empty($filtro)) {
     )";
 }
 
-// Total de registros
 $sql_total = "SELECT COUNT(*) as total " . $sql_base;
 $total_resultado = mysqli_query($conn, $sql_total);
 $total_filas = mysqli_fetch_assoc($total_resultado)['total'];
 $total_paginas = ceil($total_filas / $cantidad_por_pagina);
 
-// Datos paginados
 $sql_final = "SELECT id, num_serie, cantidad, fecha " . $sql_base . " ORDER BY id DESC LIMIT $cantidad_por_pagina OFFSET $offset";
 $resultado = mysqli_query($conn, $sql_final);
 $registros = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
@@ -51,7 +47,6 @@ $registros = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
                     <button type="submit" class="logout-btn">Salir</button>
                 </form>
             </div>
-            <button type="button" class="volver-btn" onclick="window.history.go(-1);">Volver</button>
         </div>
     </div>
 </head>

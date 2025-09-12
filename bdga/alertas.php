@@ -55,11 +55,17 @@ $categorias = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
                     <button type="submit" class="logout-btn">Salir</button>
                 </form>
             </div>
-            <button type="button" class="volver-btn" onclick="window.history.go(-1);">Volver</button>
         </div>
     </div>
 
     <div class="container">
+            <div class="botonera">
+                <button onclick="window.location.href='agregarcomp.php'">🗄️ Agregar Insumos</button>
+                <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
+                <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
+                <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
+                <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
+            </div>
         <h2>Insumos con Stock Bajo</h2>
         <?php if (!empty($categorias)): ?>
             <table>
@@ -85,15 +91,6 @@ $categorias = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
                     </tr>
                 <?php endforeach; ?>
             </table>
-
-            <div class="paginacion">
-                <?php for ($i = 1; $i <= $total_paginas; $i++): ?>
-                    <a href="?pagina=<?= $i ?>&cantidad=<?= $cantidad_por_pagina ?>"
-                       class="<?= $i == $pagina_actual ? 'activo' : '' ?>">
-                        <?= $i ?>
-                    </a>
-                <?php endfor; ?>
-            </div>
         <?php else: ?>
             <p>No hay insumos con stock bajo en este momento ✅</p>
         <?php endif; ?>

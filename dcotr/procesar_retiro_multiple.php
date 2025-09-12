@@ -149,6 +149,17 @@ $pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'reparaciones a correo s
 
 $pdf->Ln(5);
 
+$carpetaComprobantes = __DIR__ . '/temp/';
+$hace28Dias = time() - (28 * 24 * 60 * 60);
+
+if (is_dir($carpetaComprobantes)) {
+    foreach (glob($carpetaComprobantes . '*') as $archivo) {
+        if (is_file($archivo) && filemtime($archivo) < $hace28Dias) {
+            unlink($archivo);
+        }
+    }
+}
+
 $nombreArchivo = 'retiro_insumos_' . date('Ymd_His') . '.pdf';
 $rutaArchivo = 'temp/' . $nombreArchivo;
 $pdf->Output('F', $rutaArchivo);

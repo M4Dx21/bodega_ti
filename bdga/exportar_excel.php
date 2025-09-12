@@ -8,7 +8,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 $sql = "SELECT 
             codigo, insumo, stock, categoria, marca, estado, ubicacion,
-            observaciones, fecha_ingreso, caracteristicas, garantia, comprobante, precio
+            observaciones, fecha_ingreso, caracteristicas, garantia, comprobante, precio, nro_orden, provedor
         FROM componentes";
 $result = $conn->query($sql);
 
@@ -17,7 +17,7 @@ $sheet = $spreadsheet->getActiveSheet();
 
 $encabezados = [
     'Código', 'Insumo', 'Stock', 'Categoría', 'Marca', 'Estado', 'Ubicación',
-    'Observaciones', 'Fecha ingreso', 'Características', 'Garantía', 'Comprobante', 'Precio'
+    'Observaciones', 'Fecha ingreso', 'Características', 'Garantía', 'Comprobante', 'Precio', 'Numero de Serie', 'Proveedor u Origen'
 ];
 $sheet->fromArray($encabezados, null, 'A1');
 

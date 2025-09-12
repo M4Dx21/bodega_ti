@@ -18,12 +18,14 @@ if ($codigo) {
             'stock' => $row['stock'],
             'categoria' => $row['categoria'],
             'marca' => $row['marca'],
+            'precio' => $row['precio'],
             'ubicacion' => $row['ubicacion'],
             'estado' => $row['estado'],
             'caracteristicas' => $row['caracteristicas'],
             'ubicacion' => $row['ubicacion'],
-            'observaciones' => $row['observaciones']
-
+            'observaciones' => $row['observaciones'],
+            'provedor' => $row['provedor'],
+            'nro_orden' => $row['nro_orden']   
         ];
     }
     $stmt->close();

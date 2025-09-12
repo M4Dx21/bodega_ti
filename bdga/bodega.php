@@ -15,6 +15,16 @@ if (!empty($nombre_usuario_filtro)) {
     $sql_base .= " AND (categoria LIKE '%$nombre_usuario_filtro%')";
 }
 
+$fecha_inicio = $_GET['fecha_inicio'] ?? '';
+$fecha_fin = $_GET['fecha_fin'] ?? '';
+
+if ($fecha_inicio !== '') {
+    $sql_base .= " AND fecha_ingreso >= '$fecha_inicio 00:00:00'";
+}
+if ($fecha_fin !== '') {
+    $sql_base .= " AND fecha_ingreso <= '$fecha_fin 23:59:59'";
+}
+
 $sql_total = "SELECT COUNT(*) as total FROM (
     SELECT COUNT(*) 
     " . $sql_base . " 
@@ -74,7 +84,6 @@ if (isset($_GET['query'])) {
                     <button type="submit" class="logout-btn">Salir</button>
                 </form>
             </div>
-            <button type="button" class="volver-btn" onclick="window.history.go(-1);">Volver</button>
         </div>
     </div>
 </head>
@@ -102,9 +111,18 @@ if (isset($_GET['query'])) {
                 <div class="input-sugerencias-wrapper">
                     <input type="text" id="codigo" name="codigo" autocomplete="off"
                         placeholder="Escribe el insumo para buscar..."
-                        value="<?php echo htmlspecialchars($nombre_usuario_filtro); ?>">
+                        value="<?= htmlspecialchars($nombre_usuario_filtro); ?>">
                     <div id="sugerencias" class="sugerencias-box"></div>
                 </div>
+
+                <label for="fecha_inicio">Desde:</label>
+                <input type="date" id="fecha_inicio" name="fecha_inicio" 
+                    value="<?= isset($_GET['fecha_inicio']) ? htmlspecialchars($_GET['fecha_inicio']) : '' ?>">
+
+                <label for="fecha_fin">Hasta:</label>
+                <input type="date" id="fecha_fin" name="fecha_fin" 
+                    value="<?= isset($_GET['fecha_fin']) ? htmlspecialchars($_GET['fecha_fin']) : '' ?>">
+
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
                     <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
