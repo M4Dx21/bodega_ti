@@ -152,7 +152,7 @@ if (isset($_POST['agregar'])) {
         if ($archivo_nombre) {
             $stmt = $conn->prepare($sql);
             $stmt->bind_param(
-                "sissssssisssss",
+                "sissssssssssss",
                 $nombre, $nuevo_stock, $especialidad, $formato, $estado, $ubicacion,
                 $observaciones, $caracteristicas, $nuevo_precio, $garantia,
                 $nro_orden, $provedor, $fecha_ingreso,
@@ -161,7 +161,7 @@ if (isset($_POST['agregar'])) {
         } else {
             $stmt = $conn->prepare($sql);
             $stmt->bind_param(
-                "sissssssissss",
+                "sisssssssssss",
                 $nombre, $nuevo_stock, $especialidad, $formato, $estado, $ubicacion,
                 $observaciones, $caracteristicas, $nuevo_precio, $garantia,
                 $nro_orden, $provedor, $fecha_ingreso,
@@ -180,7 +180,7 @@ if (isset($_POST['agregar'])) {
 
         $stmt = $conn->prepare($sql);
         $stmt->bind_param(
-            "ssissssssisssss",
+            "ssissssssssssss",
             $codigo, $nombre, $stock, $especialidad, $formato, $estado, $ubicacion,
             $observaciones, $fecha_ingreso, $caracteristicas, $precio_total, $garantia,
             $archivo_nombre, $nro_orden, $provedor

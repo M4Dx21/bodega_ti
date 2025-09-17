@@ -284,6 +284,8 @@ if (isset($_GET['eliminar'])) {
                     <th>Ingreso</th>
                     <th>Garantia</th>
                     <th>Precio</th>
+                    <th>Provedor</th>
+                    <th>NRO Orden</th>
                     <th>Observaciones</th>
                     <th>Acciones</th>
                 </tr>
@@ -300,6 +302,8 @@ if (isset($_GET['eliminar'])) {
                         <td><?= date('d-m-y', strtotime($componente['fecha_ingreso'])) ?></td>
                         <td><?= date('d-m-y', strtotime($componente['garantia'])) ?></td>
                         <td><?= htmlspecialchars(number_format($componente['precio'], 0, ',', '.')) ?> CLP</td>
+                        <td><?= htmlspecialchars($componente['provedor']) ?></td>
+                        <td><?= htmlspecialchars($componente['nro_orden']) ?></td>
                         <td><?= htmlspecialchars($componente['observaciones']) ?></td>
                         <td class="btn-acciones-group">
                             <a  href="agregarcomp.php?editar=<?= $componente['id'] ?>&<?= $qsFiltros ?>"

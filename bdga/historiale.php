@@ -3,18 +3,30 @@ session_start();
 include 'db.php';
 
 $filtro = isset($_GET['codigo']) ? trim($conn->real_escape_string($_GET['codigo'])) : '';
+
+$fecha_inicio = isset($_GET['fecha_inicio']) ? trim($_GET['fecha_inicio']) : '';
+$fecha_fin    = isset($_GET['fecha_fin']) ? trim($_GET['fecha_fin']) : '';
+
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
 $sql_base = "FROM historial WHERE 1";
+
 if (!empty($filtro)) {
     $sql_base .= " AND (
         num_serie LIKE '%$filtro%' OR 
         cantidad LIKE '%$filtro%' OR 
         fecha LIKE '%$filtro%'
     )";
+}
+
+if (!empty($fecha_inicio)) {
+    $sql_base .= " AND fecha >= '" . $conn->real_escape_string($fecha_inicio) . " 00:00:00'";
+}
+if (!empty($fecha_fin)) {
+    $sql_base .= " AND fecha <= '" . $conn->real_escape_string($fecha_fin) . " 23:59:59'";
 }
 
 $sql_total = "SELECT COUNT(*) as total " . $sql_base;
@@ -52,26 +64,32 @@ $registros = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 </head>
 <body>
     <div class="container">
-                <div class="botonera">
-                    <form action="agregarcomp.php" method="post">
-                        <button type="submit">🗄️ Agregar Insumos</button>
-                    </form>
+        <div class="botonera">
+            <form action="agregarcomp.php" method="post">
+                <button type="submit">🗄️ Agregar Insumos</button>
+            </form>
 
-                    <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
-
-                    <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
-                    <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
-                </div>
+            <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
+            <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
+            <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
+        </div>
 
         <div class="filters">
             <form method="GET" action="">
                 <label for="codigo">Buscar:</label>
                 <div class="input-sugerencias-wrapper">
                     <input type="text" id="codigo" name="codigo" autocomplete="off"
-                        placeholder="Filtrar por número de serie, responsable o detalle..."
+                        placeholder="Filtrar por número de serie"
                         value="<?php echo htmlspecialchars($filtro); ?>">
                     <div id="sugerencias" class="sugerencias-box"></div>
                 </div>
+
+                <label for="fecha_inicio">Desde:</label>
+                <input type="date" id="fecha_inicio" name="fecha_inicio" value="<?php echo htmlspecialchars($fecha_inicio); ?>">
+
+                <label for="fecha_fin">Hasta:</label>
+                <input type="date" id="fecha_fin" name="fecha_fin" value="<?php echo htmlspecialchars($fecha_fin); ?>">
+
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
                     <button type="button" class="limpiar-filtros-btn" onclick="window.location='salidas.php'">Limpiar Filtros</button>

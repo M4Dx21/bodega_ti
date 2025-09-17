@@ -3,7 +3,7 @@ session_start();
 include 'db.php';
 include 'funciones.php';
 
-$nombre_usuario_filtro = isset($_GET['categoria']) ? $conn->real_escape_string($_GET['categoria']) : '';
+$nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
@@ -12,7 +12,7 @@ $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 $sql_base = "FROM componentes WHERE 1";
 
 if (!empty($nombre_usuario_filtro)) {
-    $sql_base .= " AND (categoria LIKE '%$nombre_usuario_filtro%')";
+    $sql_base .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
 }
 
 $fecha_inicio = $_GET['fecha_inicio'] ?? '';
@@ -88,7 +88,6 @@ if (isset($_GET['query'])) {
     </div>
 </head>
 <body>
-
     <div class="container">
             <div class="botonera">
                 <form action="agregarcomp.php" method="post">
@@ -104,7 +103,6 @@ if (isset($_GET['query'])) {
                 <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
                 <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
             </div>
-
         <div class="filters">
             <form method="GET" action="">
                 <label for="codigo">Insumo:</label>

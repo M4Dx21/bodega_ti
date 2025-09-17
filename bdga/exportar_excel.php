@@ -16,7 +16,7 @@ $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 
 $encabezados = [
-    'Código', 'Insumo', 'Stock', 'Categoría', 'Marca', 'Estado', 'Ubicación',
+    'Numero de serie', 'Modelo', 'Stock', 'Categoría', 'Marca', 'Estado', 'Ubicación',
     'Observaciones', 'Fecha ingreso', 'Características', 'Garantía', 'Comprobante', 'Precio', 'Numero de Serie', 'Proveedor u Origen'
 ];
 $sheet->fromArray($encabezados, null, 'A1');

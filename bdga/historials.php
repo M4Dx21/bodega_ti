@@ -3,18 +3,30 @@ session_start();
 include 'db.php';
 
 $filtro = isset($_GET['codigo']) ? trim($conn->real_escape_string($_GET['codigo'])) : '';
+$fecha_inicio = isset($_GET['fecha_inicio']) ? $conn->real_escape_string($_GET['fecha_inicio']) : '';
+$fecha_fin = isset($_GET['fecha_fin']) ? $conn->real_escape_string($_GET['fecha_fin']) : '';
+
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
 $sql_base = "FROM salidas WHERE 1";
+
 if (!empty($filtro)) {
     $sql_base .= " AND (
         num_serie LIKE '%$filtro%' OR 
         responsable LIKE '%$filtro%' OR
         observaciones LIKE '%$filtro%'
     )";
+}
+
+if (!empty($fecha_inicio) && !empty($fecha_fin)) {
+    $sql_base .= " AND DATE(fecha_salida) BETWEEN '$fecha_inicio' AND '$fecha_fin'";
+} elseif (!empty($fecha_inicio)) {
+    $sql_base .= " AND DATE(fecha_salida) >= '$fecha_inicio'";
+} elseif (!empty($fecha_fin)) {
+    $sql_base .= " AND DATE(fecha_salida) <= '$fecha_fin'";
 }
 
 $sql_total = "SELECT COUNT(*) as total " . $sql_base;
@@ -27,6 +39,7 @@ $total_paginas = ceil($total_filas / $cantidad_por_pagina);
 $resultado = mysqli_query($conn, $sql_final);
 $salidas = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 
+// Autocompletado
 if (isset($_GET['query'])) {
     $query = $conn->real_escape_string($_GET['query']);
     $sql = "SELECT num_serie, observaciones FROM salidas 
@@ -68,16 +81,14 @@ if (isset($_GET['query'])) {
 </head>
 <body>
     <div class="container">
-                <div class="botonera">
-                    <form action="agregarcomp.php" method="post">
-                        <button type="submit">🗄️ Agregar Insumos</button>
-                    </form>
-
-                    <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
-
-                    <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
-                    <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
-               </div>
+        <div class="botonera">
+            <form action="agregarcomp.php" method="post">
+                <button type="submit">🗄️ Agregar Insumos</button>
+            </form>
+            <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
+            <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
+            <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
+        </div>
 
         <div class="filters">
             <form method="GET" action="">
@@ -88,17 +99,24 @@ if (isset($_GET['query'])) {
                         value="<?php echo htmlspecialchars($filtro); ?>">
                     <div id="sugerencias" class="sugerencias-box"></div>
                 </div>
+
+                <label for="fecha_inicio">Desde:</label>
+                <input type="date" id="fecha_inicio" name="fecha_inicio" value="<?php echo htmlspecialchars($fecha_inicio); ?>">
+
+                <label for="fecha_fin">Hasta:</label>
+                <input type="date" id="fecha_fin" name="fecha_fin" value="<?php echo htmlspecialchars($fecha_fin); ?>">
+
                 <div class="botones-filtros">
                     <button type="submit">Filtrar</button>
                     <button type="button" class="limpiar-filtros-btn" onclick="window.location='salidas.php'">Limpiar Filtros</button>
                 </div>
             </form>
         </div>
+
         <?php if (!empty($salidas)): ?>
             <h2>Historial de Salidas</h2>
             <table>
                 <tr>
-                    <th>ID</th>
                     <th>N° Serie</th>
                     <th>Cantidad</th>
                     <th>Fecha de Salida</th>
@@ -107,7 +125,6 @@ if (isset($_GET['query'])) {
                 </tr>
                 <?php foreach ($salidas as $salida): ?>
                 <tr>
-                    <td><?= htmlspecialchars($salida['id']) ?></td>
                     <td><?= htmlspecialchars($salida['num_serie']) ?></td>
                     <td><?= htmlspecialchars($salida['cantidad']) ?></td>
                     <td><?= htmlspecialchars($salida['fecha_salida']) ?></td>
@@ -116,6 +133,7 @@ if (isset($_GET['query'])) {
                 </tr>
                 <?php endforeach; ?>
             </table>
+
             <form method="GET" style="margin-bottom: 10px;">
                 <label for="cantidad">Mostrar:</label>
                 <select name="cantidad" onchange="this.form.submit()">
@@ -125,6 +143,7 @@ if (isset($_GET['query'])) {
                 </select>
                 <input type="hidden" name="pagina" value="1">
             </form>
+
             <div class="pagination-container">
                 <?php
                 $rango_visible = 5;
@@ -138,20 +157,36 @@ if (isset($_GET['query'])) {
 
                 for ($i = $inicio; $i <= $fin; $i++) {
                     $active = $pagina_actual == $i ? 'active' : '';
-                    echo '<a href="?pagina=' . $i . '&cantidad=' . $cantidad_por_pagina . '" class="' . $active . '">' . $i . '</a>';
+                    echo '<a href="?pagina=' . $i . '&cantidad=' . $cantidad_por_pagina 
+                         . '&codigo=' . urlencode($filtro) 
+                         . '&fecha_inicio=' . urlencode($fecha_inicio) 
+                         . '&fecha_fin=' . urlencode($fecha_fin) 
+                         . '" class="' . $active . '">' . $i . '</a>';
                 }
 
                 if ($fin < $total_paginas) {
                     if ($fin < $total_paginas - 1) echo '<span>...</span>';
-                    echo '<a href="?pagina=' . $total_paginas . '&cantidad=' . $cantidad_por_pagina . '">' . $total_paginas . '</a>';
+                    echo '<a href="?pagina=' . $total_paginas . '&cantidad=' . $cantidad_por_pagina 
+                         . '&codigo=' . urlencode($filtro) 
+                         . '&fecha_inicio=' . urlencode($fecha_inicio) 
+                         . '&fecha_fin=' . urlencode($fecha_fin) 
+                         . '">' . $total_paginas . '</a>';
                 }
 
                 if ($pagina_actual > 1) {
-                    echo '<a href="?pagina=' . ($pagina_actual - 1) . '&cantidad=' . $cantidad_por_pagina . '">Anterior</a>';
+                    echo '<a href="?pagina=' . ($pagina_actual - 1) . '&cantidad=' . $cantidad_por_pagina 
+                         . '&codigo=' . urlencode($filtro) 
+                         . '&fecha_inicio=' . urlencode($fecha_inicio) 
+                         . '&fecha_fin=' . urlencode($fecha_fin) 
+                         . '">Anterior</a>';
                 }
 
                 if ($pagina_actual < $total_paginas) {
-                    echo '<a href="?pagina=' . ($pagina_actual + 1) . '&cantidad=' . $cantidad_por_pagina . '">Siguiente</a>';
+                    echo '<a href="?pagina=' . ($pagina_actual + 1) . '&cantidad=' . $cantidad_por_pagina 
+                         . '&codigo=' . urlencode($filtro) 
+                         . '&fecha_inicio=' . urlencode($fecha_inicio) 
+                         . '&fecha_fin=' . urlencode($fecha_fin) 
+                         . '">Siguiente</a>';
                 }
                 ?>
             </div>
