@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_excel'])) {
                             precio = ?,
                             nro_orden = ?,
                             provedor = ?
-                         WHERE codigo = ?"
+                        WHERE codigo = ?"
                     );
                     $stmtUpdate->bind_param(
                         'sisssssssssssss',
@@ -73,6 +73,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_excel'])) {
                     );
                     $stmtUpdate->execute();
                     $stmtUpdate->close();
+
+                    // 👉 Registrar en historial
+                    $fecha_actual = date('Y-m-d H:i:s');
+                    $stmtHist = $conn->prepare(
+                        "INSERT INTO historial (num_serie, cantidad, fecha) VALUES (?, ?, ?)"
+                    );
+                    $stmtHist->bind_param('sis', $codigo, $stock, $fecha_actual);
+                    $stmtHist->execute();
+                    $stmtHist->close();
+
                 } else {
                     $stmtInsert = $conn->prepare(
                         "INSERT INTO componentes (
@@ -89,6 +99,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_excel'])) {
                     );
                     $stmtInsert->execute();
                     $stmtInsert->close();
+
+                    // 👉 Registrar en historial
+                    $fecha_actual = date('Y-m-d H:i:s');
+                    $stmtHist = $conn->prepare(
+                        "INSERT INTO historial (num_serie, cantidad, fecha) VALUES (?, ?, ?)"
+                    );
+                    $stmtHist->bind_param('sis', $codigo, $stock, $fecha_actual);
+                    $stmtHist->execute();
+                    $stmtHist->close();
                 }
 
                 $filas_procesadas++;

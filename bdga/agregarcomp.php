@@ -391,7 +391,7 @@ if ($result->num_rows > 0) {
                     <?php endforeach; ?>
                 </select>
                     <label for="garantia">Fecha de término de garantía:</label>
-                    <input type="date" id="garantia" name="garantia" required
+                    <input type="date" id="garantia" name="garantia"
                     value="<?= $editando ? htmlspecialchars($componente_edit['garantia']) : '' ?>">
                 <div class="file-upload-wrapper">
                     <label for="comprobante" class="file-upload-label">
