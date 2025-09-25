@@ -65,7 +65,7 @@ if (isset($_GET['query'])) {
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
-            <div class="main-title">Control de Salidas</div>
+            <div class="main-title">Historial de Salidas de Insumos</div>
             <div class="sub-title">Bodega Central</div>
         </div>
         <div class="user-controls">

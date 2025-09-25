@@ -1,6 +1,13 @@
 <?php
 include 'db.php';
 session_start();
+if (!isset($_SESSION['rut'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$usuario_rut = $_SESSION['rut'];
+$usuario_nombre = $_SESSION['nombre'];
 date_default_timezone_set('America/Santiago');
 
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
@@ -188,8 +195,10 @@ if (isset($_POST['agregar'])) {
         $stmt->execute();
         $stmt->close();
 
-        $stmt_hist = $conn->prepare("INSERT INTO historial (num_serie, cantidad, fecha) VALUES (?, ?, ?)");
-        $stmt_hist->bind_param("sis", $codigo, $stock, $fecha_ingreso);
+        $responsable = $_SESSION['rut'] ?? 'desconocido';
+
+        $stmt_hist = $conn->prepare("INSERT INTO historial (num_serie, cantidad, fecha, responsable) VALUES (?, ?, ?, ?)");
+        $stmt_hist->bind_param("siss", $codigo, $stock, $fecha_ingreso, $responsable);
         $stmt_hist->execute();
         $stmt_hist->close();
 

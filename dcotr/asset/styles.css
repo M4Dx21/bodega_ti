@@ -285,6 +285,15 @@ th {
    border-top-right-radius: 10px;
 }
 
+.botonera {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 20px;
+      max-width: 200px;
+      margin: 20px auto;
+      border-radius: 10px;
+}
+
 .sugerencias-box {
    position: absolute;
    background: white;

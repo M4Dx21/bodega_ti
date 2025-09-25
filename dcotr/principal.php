@@ -132,6 +132,9 @@ if ($result->num_rows > 0) {
 </head>
 <body>
     <div class="container">
+        <div class="botonera">
+            <button onclick="window.location.href='bodega.php'">Consultar Stock</button>
+        </div>
         <div id="mensaje-container">
             <?php if (isset($mensaje)) echo $mensaje; ?>
         </div>

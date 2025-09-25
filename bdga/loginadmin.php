@@ -2,19 +2,14 @@
 session_start();
 include 'db.php';
 
-function formatearRUT($rut) {
-    $rut = str_replace(array("."), "", $rut);
-    return $rut;
-}
-
 function validarRUT($rut) {
-    $rut = str_replace(".", "", $rut);
-
-    if (!preg_match("/^[0-9]{7,8}-[0-9kK]{1}$/", $rut)) {
+    if (!preg_match("/^[0-9.]{7,8}-[0-9kK]{1}$/", $rut)) {
         return false;
     }
 
-    list($rut_numeros, $rut_dv) = explode("-", $rut);
+    $rut_limpio = str_replace(".", "", $rut);
+    list($rut_numeros, $rut_dv) = explode("-", $rut_limpio);
+    $rut_dv = strtoupper($rut_dv);
 
     $suma = 0;
     $factor = 2;
@@ -24,13 +19,10 @@ function validarRUT($rut) {
     }
 
     $dv_calculado = 11 - ($suma % 11);
-    if ($dv_calculado == 11) {
-        $dv_calculado = '0';
-    } elseif ($dv_calculado == 10) {
-        $dv_calculado = 'K';
-    }
+    if ($dv_calculado == 11) $dv_calculado = '0';
+    elseif ($dv_calculado == 10) $dv_calculado = 'K';
 
-    return strtoupper($dv_calculado) == strtoupper($rut_dv);
+    return $dv_calculado == $rut_dv;
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
@@ -38,7 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
     $pass = $_POST['pass'];
 
     if (validarRUT($rut)) {
-        $sql = "SELECT * FROM usuarios WHERE rut = '$rut' AND pass = '$pass' AND rol ='admin' ";
+
+        $sql = "SELECT * FROM usuarios WHERE rut = '$rut_sql' AND pass = '$pass' AND rol ='admin'";
         $result = $conn->query($sql);
 
         if ($result->num_rows > 0) {
@@ -73,62 +66,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
         </form>
     </div>
     <script>
-        function mostrarError(message) {
-            const errorMessage = document.getElementById("error-message");
-            errorMessage.textContent = message;
-            errorMessage.style.display = "block";
+    function mostrarError(message) {
+        const errorMessage = document.getElementById("error-message");
+        errorMessage.textContent = message;
+        errorMessage.style.display = "block";
+    }
+
+    function validarRUTInput() {
+        const rutInput = document.getElementById("rut").value;
+
+        const regex = /^[0-9.]{7,8}-[0-9kK]{1}$/;
+        if (!regex.test(rutInput)) {
+            mostrarError("El RUT ingresado debe tener puntos y guion.");
+            return false;
         }
 
-        function validarRUTInput() {
-            const rutInput = document.getElementById("rut").value;
-            let rut = rutInput.replace(/\./g, "").replace("-", "");
-            
-            const regex = /^[0-9]{7,8}[0-9kK]{1}$/;
-            if (!regex.test(rut)) {
-                mostrarError("El RUT ingresado no tiene un formato válido.");
-                return false;
-            }
+        const rutLimpio = rutInput.replace(/\./g, "");
+        const [rut_numeros, rut_dv] = rutLimpio.split("-");
 
-            const rut_numeros = rut.slice(0, -1);
-            const rut_dv = rut.slice(-1).toUpperCase();
-            
-            let suma = 0;
-            let factor = 2;
-            for (let i = rut_numeros.length - 1; i >= 0; i--) {
-                suma += parseInt(rut.charAt(i)) * factor;
-                factor = (factor === 7) ? 2 : factor + 1;
-            }
-
-            const dv_calculado = 11 - (suma % 11);
-            let dv_final;
-            if (dv_calculado === 11) {
-                dv_final = '0';
-            } else if (dv_calculado === 10) {
-                dv_final = 'K';
-            } else {
-                dv_final = dv_calculado.toString();
-            }
-
-            if (dv_final !== rut_dv) {
-                mostrarError("El RUT ingresado es incorrecto.");
-                return false;
-            }
-            return true;
+        let suma = 0;
+        let factor = 2;
+        for (let i = rut_numeros.length - 1; i >= 0; i--) {
+            suma += parseInt(rut_numeros.charAt(i)) * factor;
+            factor = (factor === 7) ? 2 : factor + 1;
         }
 
-        function limpiarRut() {
-            const rutInput = document.getElementById("rut");
-            let rut = rutInput.value;
-            rut = rut.replace(/\./g, "");
-            rutInput.value = rut;
+        const dv_calculado = 11 - (suma % 11);
+        let dv_final;
+        if (dv_calculado === 11) dv_final = '0';
+        else if (dv_calculado === 10) dv_final = 'K';
+        else dv_final = dv_calculado.toString();
+
+        if (dv_final.toUpperCase() !== rut_dv.toUpperCase()) {
+            mostrarError("El RUT ingresado es incorrecto.");
+            return false;
         }
-        
-        function validarFormulario(event) {
-            if (!validarRUTInput()) {
-                event.preventDefault();
-            }
+        return true;
+    }
+
+    function validarFormulario(event) {
+        if (!validarRUTInput()) {
+            event.preventDefault();
         }
+    }
     </script>
+
 </head>
 <body>
     <div class="container">
@@ -139,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
         </div>
 
         <form method="POST" action="" onsubmit="validarFormulario(event)">
-            <input type="text" name="rut" placeholder="RUT (con guion)" required id="rut" onblur="validarRUTInput()" oninput="limpiarRut()">
+            <input type="text" name="rut" placeholder="RUT (con guion)" required id="rut" onblur="validarRUTInput()">
             <input type="password" name="pass" placeholder="Contraseña" required>
             <button type="submit" name="solicitar">INGRESAR</button>
         </form>

@@ -3,14 +3,14 @@ session_start();
 include 'db.php';
 
 function validarRUT($rut) {
-    $rut = str_replace(array(".", "-"), "", $rut);
-    
-    if (!preg_match("/^[0-9]{7,8}[0-9kK]{1}$/", $rut)) {
+    $rut = str_replace(".", "", $rut);
+
+    if (!preg_match("/^[0-9]{7,8}-[0-9kK]{1}$/", $rut)) {
         return false;
     }
 
-    $rut_numeros = substr($rut, 0, -1);
-    $rut_dv = strtoupper(substr($rut, -1));
+    list($rut_numeros, $rut_dv) = explode("-", $rut);
+    $rut_dv = strtoupper($rut_dv);
 
     $suma = 0;
     $factor = 2;
@@ -20,11 +20,8 @@ function validarRUT($rut) {
     }
 
     $dv_calculado = 11 - ($suma % 11);
-    if ($dv_calculado == 11) {
-        $dv_calculado = '0';
-    } elseif ($dv_calculado == 10) {
-        $dv_calculado = 'K';
-    }
+    if ($dv_calculado == 11) $dv_calculado = '0';
+    elseif ($dv_calculado == 10) $dv_calculado = 'K';
 
     return $dv_calculado == $rut_dv;
 }
@@ -33,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
     $rut = $_POST['rut'];
     $pass = $_POST['pass'];
 
-    $rut = str_replace(array(".", "-"), "", $rut);
+    $rut = str_replace(".", "", $rut);
 
     if (validarRUT($rut)) {
         $sql = "SELECT * FROM usuarios WHERE rut = '$rut' AND pass = '$pass' AND rol ='bodeguero'";
@@ -48,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
             $error = "Credenciales incorrectas. Intenta nuevamente.";
         }
     } else {
-        $error = "RUT no válido.";
+        $error = "RUT no válido. Debe incluir guion.";
     }
 }
 ?>
@@ -69,17 +66,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
 
         function validarRUTInput() {
             const rutInput = document.getElementById("rut").value;
-            let rut = rutInput.replace(/\./g, "").replace("-", "");
+            let rut = rutInput.replace(/\./g, "");
             
-            const regex = /^[0-9]{7,8}[0-9kK]{1}$/;
+            const regex = /^[0-9]{7,8}-[0-9kK]{1}$/;
             if (!regex.test(rut)) {
-                mostrarError("El RUT ingresado no tiene un formato válido.");
+                mostrarError("El RUT ingresado no tiene un formato válido. Debe incluir guion.");
                 return false;
             }
 
-            const rut_numeros = rut.slice(0, -1);
-            const rut_dv = rut.slice(-1).toUpperCase();
-            
+            const [rut_numeros, rut_dv] = rut.split("-");
+            const dv = rut_dv.toUpperCase();
+
             let suma = 0;
             let factor = 2;
             for (let i = rut_numeros.length - 1; i >= 0; i--) {
@@ -87,27 +84,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
                 factor = (factor === 7) ? 2 : factor + 1;
             }
 
-            const dv_calculado = 11 - (suma % 11);
-            let dv_final;
-            if (dv_calculado === 11) {
-                dv_final = '0';
-            } else if (dv_calculado === 10) {
-                dv_final = 'K';
-            } else {
-                dv_final = dv_calculado.toString();
-            }
+            let dv_calculado = 11 - (suma % 11);
+            if (dv_calculado === 11) dv_calculado = '0';
+            else if (dv_calculado === 10) dv_calculado = 'K';
+            else dv_calculado = dv_calculado.toString();
 
-            if (dv_final !== rut_dv) {
+            if (dv_calculado !== dv) {
                 mostrarError("El RUT ingresado es incorrecto.");
                 return false;
             }
+
             return true;
         }
 
         function limpiarRut() {
             const rutInput = document.getElementById("rut");
             let rut = rutInput.value;
-            rut = rut.replace(/\./g, "").replace("-", "");
+            rut = rut.replace(/\./g, "");
             rutInput.value = rut;
         }
 
@@ -137,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
         </div>
 
         <form method="POST" action="" onsubmit="validarFormulario(event)">
-            <input type="text" name="rut" placeholder="RUT (sin puntos ni guion)" required id="rut" onblur="validarRUT()" oninput="limpiarRut()">
+            <input type="text" name="rut" placeholder="RUT (sin puntos)" required id="rut" onblur="validarRUTInput()">
             <input type="password" name="pass" placeholder="Contraseña" required>
             <button type="submit" name="solicitar">INGRESAR</button>
         </form>

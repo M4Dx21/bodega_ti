@@ -48,7 +48,7 @@ $registros = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
-            <div class="main-title">Historial de Insumos</div>
+            <div class="main-title">Historial de Entrada de Insumos</div>
             <div class="sub-title">Hospital Clínico Félix Bulnes</div>
         </div>
         <div class="user-controls">

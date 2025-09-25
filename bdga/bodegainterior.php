@@ -125,7 +125,7 @@ if (isset($_GET['query'])) {
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
-            <div class="main-title">Gestion de Bodega TI</div>
+            <div class="main-title">Control de Bodega</div>
             <div class="sub-title">Hospital Clínico Félix Bulnes</div>
         </div>
 

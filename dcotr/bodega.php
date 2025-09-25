@@ -1,7 +1,6 @@
 <?php
 session_start();
 include 'db.php';
-include 'funciones.php';
 
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
@@ -98,35 +97,7 @@ if (isset($_GET['query'])) {
 <body>
     <div class="container">
         <div class="botonera">
-            <button onclick="window.location.href='agregarcomp.php'">🗄️ Agregar Insumos</button>
-            <button onclick="window.location.href='exportar_excel.php'">📤 Exportar Excel</button>
-            <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
-            <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
-            <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
-        </div>
-        <div class="filters">
-            <form method="GET" action="">
-                <label for="codigo">Insumo:</label>
-                <div class="input-sugerencias-wrapper">
-                    <input type="text" id="codigo" name="codigo" autocomplete="off"
-                        placeholder="Escribe el insumo para buscar..."
-                        value="<?= htmlspecialchars($nombre_usuario_filtro); ?>">
-                    <div id="sugerencias" class="sugerencias-box"></div>
-                </div>
-
-                <label for="fecha_inicio">Desde:</label>
-                <input type="date" id="fecha_inicio" name="fecha_inicio" 
-                    value="<?= isset($_GET['fecha_inicio']) ? htmlspecialchars($_GET['fecha_inicio']) : '' ?>">
-
-                <label for="fecha_fin">Hasta:</label>
-                <input type="date" id="fecha_fin" name="fecha_fin" 
-                    value="<?= isset($_GET['fecha_fin']) ? htmlspecialchars($_GET['fecha_fin']) : '' ?>">
-
-                <div class="botones-filtros">
-                    <button type="submit">Filtrar</button>
-                    <button type="button" class="limpiar-filtros-btn" onclick="window.location='bodega.php'">Limpiar Filtros</button>
-                </div>
-            </form>
+            <button onclick="window.location.href='principal.php'">Volver</button>
         </div>
         <?php if (!empty($personas_dentro)): ?>
             <h2>Lista de Insumos</h2>
@@ -135,21 +106,12 @@ if (isset($_GET['query'])) {
                         <th>Categoría</th>
                         <th>Stock Total</th>
                         <th>Precio Total</th>
-                        <th>Ver Detalles</th>
                     </tr>
                     <?php foreach ($personas_dentro as $componente): ?>
                         <tr>
                             <td><?= htmlspecialchars($componente['categoria']) ?></td>
                             <td><?= htmlspecialchars($componente['stock']) ?></td>
                             <td><?= htmlspecialchars(number_format($componente['precio_total'], 0, ',', '.')) ?> CLP</td>
-                            <td>
-                                <form action="bodegainterior.php" method="GET" style="margin: 0;">
-                                    <input type="hidden" name="categoria" value="<?= htmlspecialchars($componente['categoria']) ?>">
-                                    <button type="submit" class="btn-dashboard" title="Ver insumos de esta categoría">
-                                        🔍 Ver
-                                    </button>
-                                </form>
-                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </table>
@@ -159,15 +121,6 @@ if (isset($_GET['query'])) {
     </div>
 
     <script>
-        document.addEventListener('click', function(event) {
-            const alertBtn = document.querySelector('.btn-alertas');
-            const panel = document.getElementById('alertPanel');
-            
-            if (!alertBtn.contains(event.target) && event.target !== alertBtn) {
-                panel.style.display = 'none';
-            }
-        });
-
         document.addEventListener("DOMContentLoaded", function() {
             const input = document.getElementById("codigo");
             const sugerenciasBox = document.getElementById("sugerencias");
