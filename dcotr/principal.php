@@ -56,6 +56,7 @@ if (isset($_POST['retirar'])) {
     $cantidad = (int)$_POST['stock'];
     $usuario  = $_SESSION['nombre'];
     $observaciones = isset($_POST['observaciones']) ? $_POST['observaciones'] : '';
+    $destino       = isset($_POST['destino']) ? trim($_POST['destino']) : '';
 
     $stmt = $conn->prepare("SELECT stock, precio FROM componentes WHERE codigo = ?");
     $stmt->bind_param("s", $codigo);
@@ -83,7 +84,9 @@ if (isset($_POST['retirar'])) {
         $stmt->execute();
         $stmt->close();
 
-        $stmt = $conn->prepare("INSERT INTO salidas (num_serie, cantidad, destino, fecha_salida, responsable, observaciones) VALUES (?, ?, NOW(), ?, ?)");
+         $stmt = $conn->prepare("
+        INSERT INTO salidas (num_serie, cantidad, destino, fecha_salida, responsable, observaciones)
+        VALUES (?, ?, ?, NOW(), ?, ?)"); 
         $stmt->bind_param("siss", $codigo, $cantidad, $destino, $usuario, $observaciones);
         $stmt->execute();
         $stmt->close();

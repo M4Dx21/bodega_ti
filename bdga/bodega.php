@@ -157,7 +157,6 @@ if (isset($_GET['query'])) {
             <p>No se encontraron resultados para tu búsqueda.</p>
         <?php endif; ?>
     </div>
-
     <script>
         document.addEventListener('click', function(event) {
             const alertBtn = document.querySelector('.btn-alertas');

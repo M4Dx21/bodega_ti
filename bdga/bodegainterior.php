@@ -4,7 +4,7 @@ include 'db.php';
 include 'funciones.php';
 
 $categoria_filtro = isset($_GET['categoria']) ? $conn->real_escape_string(trim($_GET['categoria'])) : '';
-$sql_base = "FROM componentes WHERE 1";
+$sql_base = "FROM componentes WHERE stock >= 1";
 
 if (!empty($categoria_filtro)) {
     $sql_base .= " AND categoria LIKE '%$categoria_filtro%'";
@@ -144,16 +144,9 @@ if (isset($_GET['query'])) {
 <body>
     <div class="container">
             <div class="botonera">
-                <form action="agregarcomp.php" method="post">
-                    <button type="submit">🗄️ Agregar Insumos</button>
-                </form>
-
-                <form action="exportar_excel.php" method="post">
-                    <button type="submit">📤 Exportar Excel</button>
-                </form>
-
+                <button onclick="window.location.href='agregarcomp.php'">🗄️ Agregar Insumos</button>
+                <button onclick="window.location.href='exportar_excel.php'">📤 Exportar Excel</button>
                 <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
-
                 <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
                 <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
             </div>

@@ -2,14 +2,13 @@
 session_start();
 include 'db.php';
 include 'funciones.php';
-include 'db.php';
 
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
-$sql_base = "FROM componentes WHERE 1";
+$sql_base = "FROM componentes WHERE stock >= 1";
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
 $modelo_filtro = isset($_GET['modelo']) ? $conn->real_escape_string(urldecode(trim($_GET['modelo']))) : '';
 $sql_final = "SELECT * $sql_base ORDER BY fecha_ingreso DESC";
@@ -52,9 +51,10 @@ $total_paginas = ceil($total_filas / $cantidad_por_pagina);
 
 if (isset($_GET['query'])) {
     $query = $conn->real_escape_string($_GET['query']);
-    $sql = "SELECT codigo, insumo FROM componentes 
-            WHERE codigo LIKE '%$query%' OR insumo LIKE '%$query%' 
-            LIMIT 10";
+        $sql = "SELECT codigo, insumo FROM componentes 
+                WHERE (codigo LIKE '%$query%' OR insumo LIKE '%$query%')
+                AND stock >= 1
+                LIMIT 10";
     $result = $conn->query($sql);
     $suggestions = [];
     while ($row = $result->fetch_assoc()) {
@@ -231,16 +231,9 @@ if (isset($_GET['eliminar'])) {
 <body>
     <div class="container">
             <div class="botonera">
-                <form action="agregarcomp.php" method="post">
-                    <button type="submit">🗄️ Agregar Insumos</button>
-                </form>
-
-                <form action="exportar_excel.php" method="post">
-                    <button type="submit">📤 Exportar Excel</button>
-                </form>
-
+                <button onclick="window.location.href='agregarcomp.php'">🗄️ Agregar Insumos</button>
+                <button onclick="window.location.href='exportar_excel.php'">📤 Exportar Excel</button>
                 <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
-
                 <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
                 <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
             </div>

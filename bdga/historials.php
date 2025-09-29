@@ -121,6 +121,7 @@ if (isset($_GET['query'])) {
                     <th>Cantidad</th>
                     <th>Fecha de Salida</th>
                     <th>Responsable</th>
+                    <th>Destino</th>
                     <th>Observaciones</th>
                 </tr>
                 <?php foreach ($salidas as $salida): ?>
@@ -129,6 +130,7 @@ if (isset($_GET['query'])) {
                     <td><?= htmlspecialchars($salida['cantidad']) ?></td>
                     <td><?= htmlspecialchars($salida['fecha_salida']) ?></td>
                     <td><?= htmlspecialchars($salida['responsable']) ?></td>
+                    <td><?= htmlspecialchars($salida['destino']) ?></td>
                     <td><?= htmlspecialchars($salida['observaciones']) ?></td>
                 </tr>
                 <?php endforeach; ?>
