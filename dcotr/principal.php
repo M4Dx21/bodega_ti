@@ -83,8 +83,8 @@ if (isset($_POST['retirar'])) {
         $stmt->execute();
         $stmt->close();
 
-        $stmt = $conn->prepare("INSERT INTO salidas (num_serie, cantidad, fecha_salida, responsable, observaciones) VALUES (?, ?, NOW(), ?, ?)");
-        $stmt->bind_param("siss", $codigo, $cantidad, $usuario, $observaciones);
+        $stmt = $conn->prepare("INSERT INTO salidas (num_serie, cantidad, destino, fecha_salida, responsable, observaciones) VALUES (?, ?, NOW(), ?, ?)");
+        $stmt->bind_param("siss", $codigo, $cantidad, $destino, $usuario, $observaciones);
         $stmt->execute();
         $stmt->close();
 
@@ -148,6 +148,7 @@ if ($result->num_rows > 0) {
                         <th>Modelo</th>
                         <th>Cantidad</th>
                         <th>Ubicación</th>
+                        <th>Destino</th>
                         <th>Acción</th>
                     </tr>
                     <tr>
@@ -160,6 +161,10 @@ if ($result->num_rows > 0) {
                         <td><input type="text" id="insumo" readonly></td>
                         <td><input type="number" id="stock" min="1" required></td>
                         <td><input type="text" id="ubicacion" readonly></td>
+                        <td>
+                            <input type="text" id="destino" name="destino" list="destino-list" placeholder="Elige destino..." required>
+                            <datalist id="destino-list"></datalist>
+                            </td>
                         <td><button type="button" onclick="agregarInsumo()">Agregar a lista</button></td>
                     </tr>
                 </table>
@@ -176,6 +181,7 @@ if ($result->num_rows > 0) {
                         <th>Modelo</th>
                         <th>Cantidad</th>
                         <th>Ubicación</th>
+                        <th>Destino</th>
                         <th>Acción</th>
                     </tr>
                 </thead>
@@ -274,84 +280,234 @@ if ($result->num_rows > 0) {
     die("La cantidad solicitada excede el stock disponible.");
     }
 
-function buscarComponente(codigo) {
-    if (!codigo.trim()) return;
+    function buscarComponente(codigo) {
+        if (!codigo.trim()) return;
 
-    fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
-        .then(res => res.json())
-        .then(data => {
-            if (data.encontrado) {
-                document.getElementById("codigo").value = data.codigo;
-                document.getElementById("categoria").value = data.categoria;
-                document.getElementById("marca").value = data.marca;
-                document.getElementById("insumo").value = data.insumo;
-                document.getElementById("ubicacion").value = data.ubicacion;
-                document.getElementById("stock").max = data.stock;
-                document.getElementById("stock").setAttribute("data-max-stock", data.stock);
-                document.getElementById("stock").focus();
-            } else {
-                alert("Insumo no encontrado.");
-            }
-        })
-        .catch(error => alert("Error al buscar insumo: " + error));
-}
-
-document.getElementById("codigo").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        buscarComponente(this.value);
-    }
-});
-
-function agregarInsumo() {
-    const codigo = document.getElementById("codigo").value.trim();
-    const categoria = document.getElementById("categoria").value.trim();
-    const marca = document.getElementById("marca").value.trim();
-    const insumo = document.getElementById("insumo").value.trim();
-    const cantidadInput = document.getElementById("stock");
-    const cantidad = parseInt(cantidadInput.value.trim());
-    const stockMax = parseInt(cantidadInput.getAttribute("data-max-stock"));
-    const ubicacion = document.getElementById("ubicacion").value.trim();
-
-    if (!codigo || !insumo || !marca || !categoria || !cantidad || cantidad < 1 || !ubicacion) {
-        alert("Completa todos los campos antes de agregar.");
-        return;
-    }
-    if (cantidad > stockMax) {
-        alert("La cantidad excede el stock disponible (" + stockMax + ").");
-        return;
+        fetch("buscar_componente.php?codigo=" + encodeURIComponent(codigo))
+            .then(res => res.json())
+            .then(data => {
+                if (data.encontrado) {
+                    document.getElementById("codigo").value = data.codigo;
+                    document.getElementById("categoria").value = data.categoria;
+                    document.getElementById("marca").value = data.marca;
+                    document.getElementById("insumo").value = data.insumo;
+                    document.getElementById("ubicacion").value = data.ubicacion;
+                    document.getElementById("stock").max = data.stock;
+                    document.getElementById("stock").setAttribute("data-max-stock", data.stock);
+                    document.getElementById("stock").focus();
+                } else {
+                    alert("Insumo no encontrado.");
+                }
+            })
+            .catch(error => alert("Error al buscar insumo: " + error));
     }
 
-    if (listaInsumos.some(item => item.codigo === codigo)) {
-        alert("Este insumo ya fue agregado.");
-        return;
+    document.getElementById("codigo").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            buscarComponente(this.value);
+        }
+    });
+
+    function agregarInsumo() {
+        const codigo = document.getElementById("codigo").value.trim();
+        const categoria = document.getElementById("categoria").value.trim();
+        const marca = document.getElementById("marca").value.trim();
+        const insumo = document.getElementById("insumo").value.trim();
+        const cantidadInput = document.getElementById("stock");
+        const cantidad = parseInt(cantidadInput.value.trim());
+        const stockMax = parseInt(cantidadInput.getAttribute("data-max-stock"));
+        const ubicacion = document.getElementById("ubicacion").value.trim();
+        const destino = document.getElementById("destino").value.trim();
+
+        if (!codigo || !insumo || !marca || !categoria || !cantidad || cantidad < 1 || !ubicacion) {
+            alert("Completa todos los campos antes de agregar.");
+            return;
+        }
+        if (cantidad > stockMax) {
+            alert("La cantidad excede el stock disponible (" + stockMax + ").");
+            return;
+        }
+
+        if (listaInsumos.some(item => item.codigo === codigo)) {
+            alert("Este insumo ya fue agregado.");
+            return;
+        }
+
+        listaInsumos.push({ codigo });
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+
+            <td><input type="hidden" name="codigo[]" value="${codigo}">${codigo}</td>
+            <td><input type="hidden" name="categoria[]" value="${categoria}">${categoria}</td>
+            <td><input type="hidden" name="marca[]" value="${marca}">${marca}</td>
+            <td><input type="hidden" name="insumo[]" value="${insumo}">${insumo}</td>
+            <td><input type="hidden" name="cantidad[]" value="${cantidad}">${cantidad}</td>
+            <td><input type="hidden" name="ubicacion[]" value="${ubicacion}">${ubicacion}</td>
+            <td><input type="hidden" name="destino[]" value="${destino}">${destino}</td>
+            <td><button type="button" onclick="eliminarInsumo(this, '${codigo}')">Eliminar</button></td>
+        `;
+        document.getElementById("body-carrito").appendChild(tr);
+
+        document.getElementById("form-agregar-insumo").reset();
+        document.getElementById("stock").removeAttribute("data-max-stock");
+        document.getElementById("codigo").focus();
     }
 
-    listaInsumos.push({ codigo });
+    function eliminarInsumo(boton, codigo) {
+        listaInsumos = listaInsumos.filter(item => item.codigo !== codigo);
+        boton.closest("tr").remove();
+    }
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
+</script>
+<script>
+  // Lista única y normalizada (acentos, espacios)
+  const DESTINOS = [
+    "ABASTECIMIENTO GESTION DOCUMENTAL PISO 2",
+    "ADQUISICIONES",
+    "ALIMENTACION",
+    "ANATOMIA PATOLOGICA",
+    "ARCHIVO",
+    "AUDITORIA",
+    "AUDITORIO",
+    "BIENESTAR",
+    "BODEGA",
+    "CAAE DIFERENCIADO",
+    "CAAE INDIFERENCIADO",
+    "CAAE CUIDADOS PALEATIVOS",
+    "CAAE DIFERENCIADO ADULTO E INFANTIL",
+    "CAAE DIFERENCIADO Y PROCEDIMIENTOS",
+    "CAAE GINECO-OBSTÉTRICO",
+    "CALIDAD DE VIDA",
+    "CALIDAD Y SEGURIDAD DEL PACIENTE",
+    "CAPACITACION",
+    "CAPACITACION CLINICA RNAO",
+    "CENTRO ESCOLAR",
+    "CHILE CRECE",
+    "CMA",
+    "COLOPROCTOLOGIA",
+    "COMERCIALIZACION",
+    "COMPRA DE SERVICIOS",
+    "COMUNICACIONES",
+    "CONCESIONES Y OPERACIONES",
+    "DEPARTAMENTO DE CALIDAD DE VIDA LABORAL",
+    "DEPARTAMENTO DE PERSONAL",
+    "CONTROL DE ASISTENCIA",
+    "DEPARTAMENTO DE SALUD OCUPACIONAL E HIGIENE AMBIENTAL",
+    "DEPTO. CALIDAD Y SEGURIDAD DEL PACIENTE",
+    "DEPTO. TI",
+    "DIRECCION",
+    "DOCENCIA",
+    "DPTO. EQUIPOS MÉDICOS",
+    "DPTO. INFORMACION Y CONTROL DE GESTION",
+    "ESTADISTICA",
+    "ESTERILIZACION",
+    "FARMACIA - HOSPITALIZADOS P -1",
+    "FARMACIA - SAP AMBULATORIO P 1",
+    "FINANZAS",
+    "GES",
+    "GESTIÓN DE CONVENIOS",
+    "GESTION DE INGRESOS",
+    "GRD",
+    "HONORARIOS",
+    "HOSPITAL DE DÍA",
+    "HOSPITAL DIA ONCOLOGÍA",
+    "HOSPITALIZACIÓN DOMICILIARIA",
+    "IAAS",
+    "IMAGENOLOGIA",
+    "INFECTOLOGIA",
+    "JURIDICA",
+    "LABORATORIO",
+    "MEDICINA FÍSICA Y REHABILITACIÓN",
+    "MOVILIZACION",
+    "NEFROLOGIA",
+    "ODONTOLOGÍA",
+    "OFICINA DE PARTES",
+    "OFTALMOLOGIA",
+    "OIRS",
+    "ONCOLOGIA",
+    "PABELLON",
+    "PABELLÓN GINECO-OBSTÉTRICO",
+    "PENSIONADO",
+    "PLANIFICACION",
+    "PREQUIRÚRGICO",
+    "PROCEDIMIENTO",
+    "PUERPERIO",
+    "RECAUDACION",
+    "RECLUTAMIENTO Y SELECCION",
+    "SALA CUNA",
+    "SALA DE PARTO",
+    "SALUD DIGITAL",
+    "SALUD OCUPACIONAL",
+    "SAP",
+    "SEDILE",
+    "CIRUGIA INFANTIL",
+    "SERVICIO DE ATENCIÓN A LAS PERSONAS (SAP)",
+    "CIRUGÍA ADULTO",
+    "SERVICIO DE MEDICINA",
+    "SERVICIO DE NEONATOLOGIA",
+    "SERVICIO DE NEUROLOGIA",
+    "SERVICIO DE OBSTETRICIA Y GINECOLOGÍA",
+    "SERVICIO DE PEDIATRIA",
+    "PSIQUIATRÍA",
+    "TRAUMATOLOGÍA",
+    "URGENCIA ADULTO",
+    "URGENCIA GINECO-OBSTÉTRICA",
+    "URGENCIA INFANTIL",
+    "UROLOGIA",
+    "SERVICIO SOCIAL",
+    "SOME",
+    "SOME HOSPITALIZADOS",
+    "SSMOC - ERP",
+    "STAFF DE SECRETARIAS",
+    "SUB DIRECCION DE GESTION Y DESARROLLO DE LAS PERSONAS",
+    "SUBDIRECCION ADMINISTRATIVA",
+    "SUBDIRECCION DE APOYO CLINICO",
+    "SUBDIRECCION DE DESARROLLO",
+    "SUBDIRECCIÓN GESTIÓN DEL CUIDADO",
+    "SUBDIRECCIÓN GESTIÓN DEL CUIDADO > LEY RICARTE SOTO",
+    "UGP",
+    "CLÍNICA FORENSE",
+    "HEMODIÁLISIS",
+    "UNIDAD DE MEDICINA TRANSFUNCIONAL",
+    "UPC ADULTO",
+    "UPC PEDIATRICA"
+  ];
 
-        <td><input type="hidden" name="codigo[]" value="${codigo}">${codigo}</td>
-        <td><input type="hidden" name="categoria[]" value="${categoria}">${categoria}</td>
-        <td><input type="hidden" name="marca[]" value="${marca}">${marca}</td>
-        <td><input type="hidden" name="insumo[]" value="${insumo}">${insumo}</td>
-        <td><input type="hidden" name="cantidad[]" value="${cantidad}">${cantidad}</td>
-        <td><input type="hidden" name="ubicacion[]" value="${ubicacion}">${ubicacion}</td>
-        <td><button type="button" onclick="eliminarInsumo(this, '${codigo}')">Eliminar</button></td>
-    `;
-    document.getElementById("body-carrito").appendChild(tr);
+  // Cargar opciones en el datalist
+  const dl = document.getElementById('destino-list');
+  if (dl) {
+    DESTINOS.forEach(txt => {
+      const opt = document.createElement('option');
+      opt.value = txt;
+      dl.appendChild(opt);
+    });
+  }
 
-    document.getElementById("form-agregar-insumo").reset();
-    document.getElementById("stock").removeAttribute("data-max-stock");
-    document.getElementById("codigo").focus();
-}
+  // Validador: asegura que el valor ingresado esté en la lista
+  function destinoEsValido(valor) {
+    const normaliza = s => s.normalize("NFC").trim().toLowerCase();
+    const v = normaliza(valor);
+    return DESTINOS.some(d => normaliza(d) === v);
+  }
 
-function eliminarInsumo(boton, codigo) {
-    listaInsumos = listaInsumos.filter(item => item.codigo !== codigo);
-    boton.closest("tr").remove();
-}
+  // Si ya tienes una función agregarInsumo(), aquí la envolvemos para validar "destino".
+  // Si tu función ya existe, solo añade la comprobación del comienzo al final.
+  const _agregarInsumoOriginal = window.agregarInsumo;
+  window.agregarInsumo = function() {
+    const destinoInput = document.getElementById('destino');
+    if (!destinoInput) return _agregarInsumoOriginal ? _agregarInsumoOriginal() : true;
 
+    const valor = destinoInput.value;
+    if (!destinoEsValido(valor)) {
+      alert('Por favor, elige un "Destino" de la lista.');
+      destinoInput.focus();
+      return false;
+    }
+    // Continúa con la lógica original
+    return _agregarInsumoOriginal ? _agregarInsumoOriginal() : true;
+  };
 </script>
 <style>
     .btn-acciones-group {
