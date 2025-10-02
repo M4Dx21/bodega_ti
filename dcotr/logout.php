@@ -2,6 +2,7 @@
 session_start();
 session_unset();
 session_destroy();
-header("Location: index.php");
-exit();
-?>
+
+// volver al index de bdga
+header("Location: ../bdga/index.php");
+exit;

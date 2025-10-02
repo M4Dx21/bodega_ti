@@ -65,10 +65,8 @@ $registros = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 <body>
     <div class="container">
         <div class="botonera">
-            <form action="agregarcomp.php" method="post">
-                <button type="submit">🗄️ Agregar Insumos</button>
-            </form>
-
+            <button onclick="window.location.href='bodegat.php'">🖥️ Insumos General</button>
+            <button onclick="window.location.href='agregarcomp.php'">🗄️ Agregar Insumos</button>
             <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
             <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
             <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>

@@ -96,6 +96,7 @@ if (isset($_POST['agregar'])) {
     $archivo_nombre = null;
     $mensaje_archivo = '';
 
+    // Manejo del archivo comprobante (opcional)
     if (isset($_FILES['comprobante']) && $_FILES['comprobante']['error'] === UPLOAD_ERR_OK) {
         $permitidos = ['pdf', 'doc', 'docx', 'xlsx', 'xls', 'jpg', 'png'];
         $nombre_original = $_FILES['comprobante']['name'];
@@ -115,15 +116,16 @@ if (isset($_POST['agregar'])) {
         }
     }
 
+    // Datos del formulario
     $nombre         = $_POST['insumo'];
     $codigo         = $_POST['codigo'];
-    $stock          = (int)$_POST["stock"];
+    $stock          = (string) ((int)$_POST["stock"]); // tipado como string para bind_param
     $especialidad   = $_POST['categoria'];
     $formato        = $_POST['marca'];
     $estado         = $_POST['estado'];
     $ubicacion      = $_POST['ubicacion_select'];
     $nro_orden      = $_POST['nro_orden'];
-    $provedor      = $_POST['provedor'];
+    $provedor       = $_POST['provedor'];
 
     if ($ubicacion === 'otro' && !empty($_POST['otra_ubicacion'])) {
         $ubicacion = trim($_POST['otra_ubicacion']);
@@ -133,10 +135,11 @@ if (isset($_POST['agregar'])) {
     $caracteristicas  = $_POST['caracteristicas'];
     $observaciones    = $_POST['observaciones'];
     $precio_unitario  = (int)$_POST["precio"];
-    $precio_total     = $precio_unitario * $stock;
+    $precio_total     = (string)($precio_unitario * (int)$stock);
     $garantia         = $_POST['garantia'];
     $fecha_ingreso    = date('Y-m-d H:i:s');
 
+    // ¿Existe el código?
     $consulta_existente = "SELECT id, stock, precio FROM componentes WHERE codigo = ?";
     $stmt = $conn->prepare($consulta_existente);
     $stmt->bind_param("s", $codigo);
@@ -147,8 +150,9 @@ if (isset($_POST['agregar'])) {
     $stmt->close();
 
     if ($existe) {
-        $nuevo_stock = $fila_existente['stock'] + $stock;
-        $nuevo_precio = $fila_existente['precio'] + $precio_total;
+        // UPDATE (sumar stock y precio, y actualizar resto)
+        $nuevo_stock  = (string) (((int)$fila_existente['stock']) + (int)$stock);
+        $nuevo_precio = (string) (((int)$fila_existente['precio']) + (int)$precio_total);
 
         $sql = "UPDATE componentes SET 
                     insumo=?, stock=?, categoria=?, marca=?, estado=?, ubicacion=?, 
@@ -156,50 +160,96 @@ if (isset($_POST['agregar'])) {
                     . ($archivo_nombre ? ", comprobante=?" : "") . 
                 " WHERE codigo=?";
 
+        $stmt = $conn->prepare($sql);
+
         if ($archivo_nombre) {
-            $stmt = $conn->prepare($sql);
+            // 15 parámetros -> 15 's'
             $stmt->bind_param(
-                "sissssssssssss",
-                $nombre, $nuevo_stock, $especialidad, $formato, $estado, $ubicacion,
-                $observaciones, $caracteristicas, $nuevo_precio, $garantia,
-                $nro_orden, $provedor, $fecha_ingreso,
-                $archivo_nombre, $codigo
+                "sssssssssssssss",
+                $nombre,
+                $nuevo_stock,
+                $especialidad,
+                $formato,
+                $estado,
+                $ubicacion,
+                $observaciones,
+                $caracteristicas,
+                $nuevo_precio,
+                $garantia,
+                $nro_orden,
+                $provedor,
+                $fecha_ingreso,
+                $archivo_nombre,
+                $codigo
             );
         } else {
-            $stmt = $conn->prepare($sql);
+            // 14 parámetros -> 14 's'
             $stmt->bind_param(
-                "sisssssssssss",
-                $nombre, $nuevo_stock, $especialidad, $formato, $estado, $ubicacion,
-                $observaciones, $caracteristicas, $nuevo_precio, $garantia,
-                $nro_orden, $provedor, $fecha_ingreso,
+                "ssssssssssssss",
+                $nombre,
+                $nuevo_stock,
+                $especialidad,
+                $formato,
+                $estado,
+                $ubicacion,
+                $observaciones,
+                $caracteristicas,
+                $nuevo_precio,
+                $garantia,
+                $nro_orden,
+                $provedor,
+                $fecha_ingreso,
                 $codigo
             );
         }
-        $stmt->execute();
+
+        if (!$stmt->execute()) {
+            error_log("UPDATE (agregar) error: " . $stmt->error);
+        }
         $stmt->close();
 
         $mensaje = 'Insumo actualizado correctamente.';
     } else {
+        // INSERT nuevo
         $sql = "INSERT INTO componentes 
                 (codigo, insumo, stock, categoria, marca, estado, ubicacion, observaciones, 
-                fecha_ingreso, caracteristicas, precio, garantia, comprobante, nro_orden, provedor) 
+                 fecha_ingreso, caracteristicas, precio, garantia, comprobante, nro_orden, provedor) 
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         $stmt = $conn->prepare($sql);
+        // 15 parámetros -> 15 's'
         $stmt->bind_param(
-            "ssissssssssssss",
-            $codigo, $nombre, $stock, $especialidad, $formato, $estado, $ubicacion,
-            $observaciones, $fecha_ingreso, $caracteristicas, $precio_total, $garantia,
-            $archivo_nombre, $nro_orden, $provedor
+            "sssssssssssssss",
+            $codigo,
+            $nombre,
+            $stock,
+            $especialidad,
+            $formato,
+            $estado,
+            $ubicacion,
+            $observaciones,
+            $fecha_ingreso,
+            $caracteristicas,
+            $precio_total,
+            $garantia,
+            $archivo_nombre,
+            $nro_orden,
+            $provedor
         );
-        $stmt->execute();
+
+        if (!$stmt->execute()) {
+            error_log("INSERT (agregar) error: " . $stmt->error);
+        }
         $stmt->close();
 
+        // historial
         $responsable = $_SESSION['rut'] ?? 'desconocido';
-
         $stmt_hist = $conn->prepare("INSERT INTO historial (num_serie, cantidad, fecha, responsable) VALUES (?, ?, ?, ?)");
-        $stmt_hist->bind_param("siss", $codigo, $stock, $fecha_ingreso, $responsable);
-        $stmt_hist->execute();
+        // 4 parámetros -> "ssss"
+        $stmt_hist->bind_param("ssss", $codigo, $stock, $fecha_ingreso, $responsable);
+        if (!$stmt_hist->execute()) {
+            error_log("INSERT historial error: " . $stmt_hist->error);
+        }
         $stmt_hist->close();
 
         $mensaje = 'Insumo agregado correctamente.';
@@ -226,13 +276,13 @@ if (isset($_POST['guardar_cambios'])) {
     $id            = $_POST["id"];
     $nombre        = $_POST["insumo"];
     $codigo        = $_POST["codigo"];
-    $stock         = (int)$_POST["stock"];
+    $stock         = (string) ((int)$_POST["stock"]); // como string para bind_param
     $especialidad  = $_POST["categoria"];
     $formato       = $_POST["marca"];
     $estado        = $_POST["estado"];
     $ubicacion     = $_POST['ubicacion_select'];
     $nro_orden     = $_POST["nro_orden"];
-    $provedor     = $_POST["provedor"];
+    $provedor      = $_POST["provedor"];
 
     if ($ubicacion === 'otro' && !empty($_POST['otra_ubicacion'])) {
         $ubicacion = trim($_POST['otra_ubicacion']);
@@ -241,7 +291,7 @@ if (isset($_POST['guardar_cambios'])) {
 
     $observaciones   = $_POST["observaciones"];
     $precio_unitario = (int)$_POST["precio"];
-    $precio_total    = $precio_unitario * $stock;
+    $precio_total    = (string)($precio_unitario * (int)$stock);
     $garantia        = $_POST["garantia"];
     $fecha_ingreso   = date('Y-m-d H:i:s');
 
@@ -264,11 +314,23 @@ if (isset($_POST['guardar_cambios'])) {
                     observaciones=?, fecha_ingreso=?, garantia=?, comprobante=?, precio=?, nro_orden=?, provedor=? 
                 WHERE id=?";
         $stmt = $conn->prepare($sql);
+        // 14 parámetros -> 14 's'
         $stmt->bind_param(
-            "sissssssssissi",
-            $nombre, $stock, $especialidad, $formato, $estado, $ubicacion,
-            $observaciones, $fecha_ingreso, $garantia, $archivo_nombre, $precio_total,
-            $nro_orden, $provedor, $id
+            "ssssssssssssss",
+            $nombre,
+            $stock,
+            $especialidad,
+            $formato,
+            $estado,
+            $ubicacion,
+            $observaciones,
+            $fecha_ingreso,
+            $garantia,
+            $archivo_nombre,
+            $precio_total,
+            $nro_orden,
+            $provedor,
+            $id
         );
     } else {
         $sql = "UPDATE componentes SET 
@@ -276,15 +338,28 @@ if (isset($_POST['guardar_cambios'])) {
                     observaciones=?, fecha_ingreso=?, garantia=?, precio=?, nro_orden=?, provedor=? 
                 WHERE id=?";
         $stmt = $conn->prepare($sql);
+        // 13 parámetros -> 13 's'
         $stmt->bind_param(
-            "sisssssssiisi",
-            $nombre, $stock, $especialidad, $formato, $estado, $ubicacion,
-            $observaciones, $fecha_ingreso, $garantia, $precio_total,
-            $nro_orden, $provedor, $id
+            "sssssssssssss",
+            $nombre,
+            $stock,
+            $especialidad,
+            $formato,
+            $estado,
+            $ubicacion,
+            $observaciones,
+            $fecha_ingreso,
+            $garantia,
+            $precio_total,
+            $nro_orden,
+            $provedor,
+            $id
         );
     }
 
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        error_log("UPDATE (editar) error: " . $stmt->error);
+    }
     $stmt->close();
 
     header("Location: agregarcomp.php?mensaje=editado");
@@ -332,8 +407,10 @@ if ($result->num_rows > 0) {
     <div class="container">
 
         <div class="botonera">
+            <button onclick="window.location.href='bodegat.php'">🖥️ Insumos General</button>
             <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
             <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
+            <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
             <button onclick="window.location.href='historials.php'">📑 Historial Salida</button>
             <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>
         </div>
@@ -610,7 +687,6 @@ input.addEventListener("input", function() {
     .btn-pequeno:hover {
         background-color:rgb(4, 65, 129);
     }
-
 </style>
 </body>
 </html>

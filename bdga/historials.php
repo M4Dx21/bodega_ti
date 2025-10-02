@@ -82,9 +82,8 @@ if (isset($_GET['query'])) {
 <body>
     <div class="container">
         <div class="botonera">
-            <form action="agregarcomp.php" method="post">
-                <button type="submit">🗄️ Agregar Insumos</button>
-            </form>
+            <button onclick="window.location.href='bodegat.php'">🖥️ Insumos General</button>
+            <button onclick="window.location.href='agregarcomp.php'">🗄️ Agregar Insumos</button>
             <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
             <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
             <button class="btn-alerta" onclick="window.location.href='alertas.php'">🚨 Alertas de Stock</button>

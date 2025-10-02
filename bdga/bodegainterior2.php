@@ -3,58 +3,93 @@ session_start();
 include 'db.php';
 include 'funciones.php';
 
+date_default_timezone_set('America/Santiago');
+
+// ---------------------------
+// Parámetros de filtros y paginación
+// ---------------------------
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+$pagina_actual = max(1, $pagina_actual);
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
-$sql_base = "FROM componentes WHERE stock >= 1";
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
 $modelo_filtro = isset($_GET['modelo']) ? $conn->real_escape_string(urldecode(trim($_GET['modelo']))) : '';
-$sql_final = "SELECT * $sql_base ORDER BY fecha_ingreso DESC";
-$resultado = mysqli_query($conn, $sql_final);
-$componentes = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+
+// Para reconstruir querystring al volver de acciones (eliminar, etc.)
 $qsFiltros = [];
 if ($modelo_filtro !== '')           $qsFiltros['modelo']  = $modelo_filtro;
 if ($nombre_usuario_filtro !== '')   $qsFiltros['codigo']  = $nombre_usuario_filtro;
 $qsFiltros['cantidad'] = $cantidad_por_pagina;
 $qsFiltros['pagina']   = $pagina_actual;
+$qsFiltros = http_build_query($qsFiltros);
 
-$qsFiltros = http_build_query($qsFiltros); 
+// ---------------------------
+// REGLA: Este archivo es del flujo BODEGA, por lo tanto EXCLUYE EN TERRENO
+// ---------------------------
+$ESTADO_EXCLUIR = 'EN TERRENO';
 
-if (!empty($modelo_filtro)) {
+// ---------------------------
+// Base de consulta (siempre stock >= 1 y estado <> EN TERRENO)
+// ---------------------------
+$sql_base = "FROM componentes WHERE stock >= 1 AND estado <> '$ESTADO_EXCLUIR'";
+
+// Filtro por modelo exacto (insumo)
+if ($modelo_filtro !== '') {
     $sql_base .= " AND insumo = '$modelo_filtro'";
 }
 
-if (!empty($nombre_usuario_filtro)) {
+// Filtro por código o insumo (búsqueda)
+if ($nombre_usuario_filtro !== '') {
     $sql_base .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
 }
 
-$sql_final = "SELECT * $sql_base ORDER BY fecha_ingreso DESC LIMIT $cantidad_por_pagina OFFSET $offset";
-
-$resultado = mysqli_query($conn, $sql_final);
-$personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
-
+// ---------------------------
+// Alertas de stock (como lo tenías)
+// ---------------------------
 $insumosBajos = obtenerInsumosBajoStock($conn);
 if ($insumosBajos !== false && !empty($insumosBajos)) {
     $_SESSION['alertas_stock'] = $insumosBajos;
 }
 
+// ---------------------------
+/* Total de páginas (agrupando por insumo/marca/estado/ubicación dentro del filtro)
+   Si no necesitas agrupar, puedes contar directo, pero dejo tu enfoque */
 $sql_total = "SELECT COUNT(*) as total FROM (
     SELECT COUNT(*) 
-    " . $sql_base . " 
+    $sql_base
     GROUP BY insumo, marca, estado, ubicacion
 ) as agrupados";
 $total_resultado = mysqli_query($conn, $sql_total);
-$total_filas = mysqli_fetch_assoc($total_resultado)['total'];
-$total_paginas = ceil($total_filas / $cantidad_por_pagina);
+$total_filas = (int)mysqli_fetch_assoc($total_resultado)['total'];
+$total_paginas = max(1, ceil($total_filas / $cantidad_por_pagina));
 
+// ---------------------------
+// Listado principal con filtros y paginación
+// ---------------------------
+$sql_final = "SELECT * 
+    $sql_base
+    ORDER BY fecha_ingreso DESC 
+    LIMIT $cantidad_por_pagina OFFSET $offset";
+
+$resultado = mysqli_query($conn, $sql_final);
+$personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
+
+// ---------------------------
+// Autocompletado: también EXCLUYE EN TERRENO + stock >= 1 (+ respeta modelo si venía)
+// ---------------------------
 if (isset($_GET['query'])) {
     $query = $conn->real_escape_string($_GET['query']);
-        $sql = "SELECT codigo, insumo FROM componentes 
-                WHERE (codigo LIKE '%$query%' OR insumo LIKE '%$query%')
-                AND stock >= 1
-                LIMIT 10";
+
+    $where_auto = "estado <> '$ESTADO_EXCLUIR' AND stock >= 1 AND (codigo LIKE '%$query%' OR insumo LIKE '%$query%')";
+    if ($modelo_filtro !== '') {
+        $where_auto .= " AND insumo = '$modelo_filtro'";
+    }
+
+    $sql = "SELECT codigo, insumo FROM componentes 
+            WHERE $where_auto
+            LIMIT 10";
     $result = $conn->query($sql);
     $suggestions = [];
     while ($row = $result->fetch_assoc()) {
@@ -64,6 +99,10 @@ if (isset($_GET['query'])) {
     echo json_encode($suggestions);
     exit();
 }
+
+// ---------------------------
+// Ver comprobante
+// ---------------------------
 if (isset($_GET['comprobante'])) {
     $id = (int)$_GET['comprobante'];
 
@@ -75,17 +114,14 @@ if (isset($_GET['comprobante'])) {
 
     if ($res && !empty($res['comprobante'])) {
         $file = __DIR__ . '/comprobantes/' . $res['comprobante'];
-
         if (is_file($file)) {
             $mime = mime_content_type($file);
-
             header('Content-Type: ' . $mime);
             header('Content-Disposition: inline; filename="' . basename($file) . '"');
             header('Content-Length: ' . filesize($file));
             readfile($file);
             exit;
-        }
-        else {
+        } else {
             echo "<script>alert('El archivo del comprobante no se encontró en el servidor');history.back();</script>";
             exit;
         }
@@ -95,6 +131,9 @@ if (isset($_GET['comprobante'])) {
     }
 }
 
+// ---------------------------
+// Eliminar
+// ---------------------------
 if (isset($_GET['eliminar'])) {
     $id = (int)$_GET['eliminar'];
     $stmt = $conn->prepare("DELETE FROM componentes WHERE id = ?");
@@ -105,7 +144,6 @@ if (isset($_GET['eliminar'])) {
     header('Location: bodegainterior2.php?' . $qsFiltros);
     exit;
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -231,6 +269,7 @@ if (isset($_GET['eliminar'])) {
 <body>
     <div class="container">
             <div class="botonera">
+                <button onclick="window.location.href='bodegat.php'">🖥️ Insumos General</button>
                 <button onclick="window.location.href='agregarcomp.php'">🗄️ Agregar Insumos</button>
                 <button onclick="window.location.href='exportar_excel.php'">📤 Exportar Excel</button>
                 <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>

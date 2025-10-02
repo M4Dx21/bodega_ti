@@ -60,6 +60,7 @@ $categorias = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 
     <div class="container">
             <div class="botonera">
+                <button onclick="window.location.href='bodegat.php'">🖥️ Insumos General</button>
                 <button onclick="window.location.href='agregarcomp.php'">🗄️ Agregar Insumos</button>
                 <button onclick="window.location.href='bodega.php'">📦 Control de bodega</button>
                 <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>

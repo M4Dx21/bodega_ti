@@ -9,7 +9,9 @@ $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $c
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
-$sql_base = "FROM componentes WHERE 1";
+// bodega.php
+$ESTADO_EXCLUIR = 'EN TERRENO';
+$sql_base = "FROM componentes WHERE estado <> '$ESTADO_EXCLUIR'";
 
 if (!empty($nombre_usuario_filtro)) {
     $sql_base .= " AND (
@@ -98,6 +100,7 @@ if (isset($_GET['query'])) {
 <body>
     <div class="container">
         <div class="botonera">
+            <button onclick="window.location.href='bodegat.php'">🖥️ Insumos General</button>
             <button onclick="window.location.href='agregarcomp.php'">🗄️ Agregar Insumos</button>
             <button onclick="window.location.href='exportar_excel.php'">📤 Exportar Excel</button>
             <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
@@ -145,9 +148,7 @@ if (isset($_GET['query'])) {
                             <td>
                                 <form action="bodegainterior.php" method="GET" style="margin: 0;">
                                     <input type="hidden" name="categoria" value="<?= htmlspecialchars($componente['categoria']) ?>">
-                                    <button type="submit" class="btn-dashboard" title="Ver insumos de esta categoría">
-                                        🔍 Ver
-                                    </button>
+                                    <button type="submit" class="btn-dashboard">🔍 Ver</button>
                                 </form>
                             </td>
                         </tr>

@@ -4,35 +4,50 @@ include 'db.php';
 include 'funciones.php';
 
 $categoria_filtro = isset($_GET['categoria']) ? $conn->real_escape_string(trim($_GET['categoria'])) : '';
-$sql_base = "FROM componentes WHERE stock >= 1";
-
-if (!empty($categoria_filtro)) {
-    $sql_base .= " AND categoria LIKE '%$categoria_filtro%'";
-}
-
 $nombre_usuario_filtro = isset($_GET['codigo']) ? $conn->real_escape_string($_GET['codigo']) : '';
+
 $cantidad_por_pagina = isset($_GET['cantidad']) ? (int)$_GET['cantidad'] : 10;
 $cantidad_por_pagina = in_array($cantidad_por_pagina, [10, 20, 30, 40, 50]) ? $cantidad_por_pagina : 10;
 $pagina_actual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina_actual - 1) * $cantidad_por_pagina;
 
+$ESTADO_EXCLUIR = 'EN TERRENO';
+
+/**
+ * Base: SOLO insumos en bodega (stock >= 1) y EXCLUYENDO EN TERRENO
+ */
+$sql_base = "FROM componentes WHERE stock >= 1 AND estado <> '$ESTADO_EXCLUIR'";
+
+if (!empty($categoria_filtro)) {
+    $sql_base .= " AND categoria LIKE '%$categoria_filtro%'";
+}
+
 if (!empty($nombre_usuario_filtro)) {
     $sql_base .= " AND (codigo LIKE '%$nombre_usuario_filtro%' OR insumo LIKE '%$nombre_usuario_filtro%')";
 }
+
+/** Alertas de stock (igual que tenías) */
 $insumosBajos = obtenerInsumosBajoStock($conn);
 if ($insumosBajos !== false && !empty($insumosBajos)) {
     $_SESSION['alertas_stock'] = $insumosBajos;
 }
 
+/**
+ * Total páginas (agrupado por insumo/marca/estado/ubicación dentro del filtro)
+ */
 $sql_total = "SELECT COUNT(*) as total FROM (
     SELECT COUNT(*) 
-    " . $sql_base . " 
+    $sql_base
     GROUP BY insumo, marca, estado, ubicacion
 ) as agrupados";
-$total_resultado = mysqli_query($conn, $sql_total);
-$total_filas = mysqli_fetch_assoc($total_resultado)['total'];
-$total_paginas = ceil($total_filas / $cantidad_por_pagina);
 
+$total_resultado = mysqli_query($conn, $sql_total);
+$total_filas = (int)mysqli_fetch_assoc($total_resultado)['total'];
+$total_paginas = max(1, ceil($total_filas / $cantidad_por_pagina));
+
+/**
+ * Listado principal (agrupado)
+ */
 $sql_final = "SELECT 
                 insumo, 
                 marca, 
@@ -40,17 +55,28 @@ $sql_final = "SELECT
                 ubicacion, 
                 MAX(fecha_ingreso) AS fecha_ingreso, 
                 SUM(stock) AS stock 
-             " . $sql_base . " 
+             $sql_base
              GROUP BY insumo, marca, estado, ubicacion 
              ORDER BY fecha_ingreso DESC 
              LIMIT $cantidad_por_pagina OFFSET $offset";
+
 $resultado = mysqli_query($conn, $sql_final);
 $personas_dentro = mysqli_fetch_all($resultado, MYSQLI_ASSOC);
 
+/**
+ * Autocompletado: también EXCLUYE EN TERRENO (y respeta categoría si venía)
+ */
 if (isset($_GET['query'])) {
     $query = $conn->real_escape_string($_GET['query']);
-    $sql = "SELECT codigo, insumo FROM componentes 
-            WHERE codigo LIKE '%$query%' OR insumo LIKE '%$query%' 
+    $where_auto = "estado <> '$ESTADO_EXCLUIR' AND (codigo LIKE '%$query%' OR insumo LIKE '%$query%')";
+    if (!empty($categoria_filtro)) {
+        $cat = $conn->real_escape_string($categoria_filtro);
+        $where_auto .= " AND categoria LIKE '%$cat%'";
+    }
+
+    $sql = "SELECT codigo, insumo 
+            FROM componentes 
+            WHERE $where_auto
             LIMIT 10";
     $result = $conn->query($sql);
     $suggestions = [];
@@ -144,6 +170,7 @@ if (isset($_GET['query'])) {
 <body>
     <div class="container">
             <div class="botonera">
+                <button onclick="window.location.href='bodegat.php'">🖥️ Insumos General</button>
                 <button onclick="window.location.href='agregarcomp.php'">🗄️ Agregar Insumos</button>
                 <button onclick="window.location.href='exportar_excel.php'">📤 Exportar Excel</button>
                 <button onclick="window.location.href='historiale.php'">📑 Historial Entrada</button>
