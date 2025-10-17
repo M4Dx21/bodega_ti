@@ -2,48 +2,61 @@
 session_start();
 include 'db.php';
 
-function validarRUT($rut) {
-    if (!preg_match("/^[0-9.]{7,8}-[0-9kK]{1}$/", $rut)) {
-        return false;
-    }
-
-    $rut_limpio = str_replace(".", "", $rut);
-    list($rut_numeros, $rut_dv) = explode("-", $rut_limpio);
-    $rut_dv = strtoupper($rut_dv);
-
-    $suma = 0;
-    $factor = 2;
-    for ($i = strlen($rut_numeros) - 1; $i >= 0; $i--) {
-        $suma += $rut_numeros[$i] * $factor;
-        $factor = ($factor == 7) ? 2 : $factor + 1;
-    }
-
-    $dv_calculado = 11 - ($suma % 11);
-    if ($dv_calculado == 11) $dv_calculado = '0';
-    elseif ($dv_calculado == 10) $dv_calculado = 'K';
-
-    return $dv_calculado == $rut_dv;
+function normalizarRUT($rut) {
+    $rut = trim($rut);
+    $parts = explode('-', $rut);
+    if (count($parts) !== 2) return null;
+    $num = $parts[0];
+    $dv  = strtoupper($parts[1]);
+    return $num . '-' . $dv;
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['solicitar'])) {
-    $rut = $_POST['rut'];
-    $pass = $_POST['pass'];
+function validarRUT($rut) {
+    if (strpos($rut, '-') === false) return false;
+    list($num, $dv) = explode('-', $rut);
+    $num = str_replace('.', '', $num);
+    $dv = strtoupper($dv);
 
-    if (validarRUT($rut)) {
+    $suma = 0; $factor = 2;
+    for ($i = strlen($num) - 1; $i >= 0; $i--) {
+        $suma += intval($num[$i]) * $factor;
+        $factor = ($factor == 7) ? 2 : $factor + 1;
+    }
+    $dig = 11 - ($suma % 11);
+    $dv_calc = ($dig == 11) ? '0' : (($dig == 10) ? 'K' : (string)$dig);
+    return $dv_calc === $dv;
+}
 
-        $sql = "SELECT * FROM usuarios WHERE rut = '$rut_sql' AND pass = '$pass' AND rol ='admin'";
-        $result = $conn->query($sql);
+$error = '';
 
-        if ($result->num_rows > 0) {
-            $_SESSION['rut'] = $rut;
-            $_SESSION['nombre'] = $result->fetch_assoc()['nombre'];
-            header("Location: admin.php");
-            exit();
-        } else {
-            $error = "Credenciales incorrectas. Intenta nuevamente.";
-        }
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['solicitar'])) {
+    $rut_input = $_POST['rut'];
+    $pass      = $_POST['pass'];
+
+    $rut_norm = normalizarRUT($rut_input);
+    if (!$rut_norm || !validarRUT($rut_norm)) {
+        $error = 'RUT no válido.';
     } else {
-        $error = "RUT no válido.";
+
+        $stmt = $conn->prepare("SELECT nombre, pass FROM usuarios WHERE rut = ? AND rol = 'admin' LIMIT 1");
+        $stmt->bind_param("s", $rut_norm);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        if ($row = $res->fetch_assoc()) {
+
+            if ($pass === $row['pass']) {
+                $_SESSION['rut']    = $rut_norm;
+                $_SESSION['nombre'] = $row['nombre'];
+                header("Location: admin.php");
+                exit();
+            } else {
+                $error = 'Credenciales incorrectas. Intenta nuevamente.';
+            }
+        } else {
+            $error = 'Credenciales incorrectas. Intenta nuevamente.';
+        }
+        $stmt->close();
     }
 }
 ?>

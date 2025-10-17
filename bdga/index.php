@@ -46,7 +46,7 @@ if (isset($_POST['role'])) {
     <div class="header">
         <img src="asset/logo.png" alt="Logo">
         <div class="header-text">
-            <div class="main-title">Bodega TI</div>
+            <div class="main-title">Menu de insumos TI</div>
             <div class="sub-title">Hospital Clínico Félix Bulnes</div>
         </div>
     </div>
@@ -56,7 +56,7 @@ if (isset($_POST['role'])) {
             <button type="submit" name="role" value="admin" class="role-button admin">Admin</button>
             <button type="submit" name="role" value="prestador" class="role-button prestador">Bodega</button>
             <button type="submit" name="role" value="especial" class="role-button admin">Solicitudes Bodega</button>
-            <a href="/prestamos/index.php" class="role-button prestador">Peticiones TI</a>
+            <a href="/prestamos/index.php" class="role-button prestador">Préstamo de equipamiento</a>
         </form>
     </div>
 </body>

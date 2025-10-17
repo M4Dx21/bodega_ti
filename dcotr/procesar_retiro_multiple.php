@@ -79,16 +79,15 @@ $pdf->Image('asset/felix.jpg', 180, 10, 18, 18);
 
 $pdf->Ln(15);
 
-$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'ACTA DE ENTREGA EQUIPAMIENTO COMPUTACIONAL'), 0, 1, 'C');
+$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'ACTA DE ENTREGA EQUIPAMIENTO TECNOLÓGICO'), 0, 1, 'C');
 $pdf->Ln(2);
 
 $pdf->SetFont('Arial','B',12);
-$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'En Santiago '. date('d/m/Y') . ' se hace entrega de equipamiento tecnológico de propiedad de '), 0, 1);
-$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Hospital Dr. Félix Bulnes Cerda, el cual posee las siguientes características: '), 0, 1);
+$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'En Santiago '. date('d/m/Y') . ' mediante la presente acta se hace entrega del equipamiento tecnológico,'), 0, 1);
+$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'descrito a continuación, de propiedad de Hospital Dr. Félix Bulnes Cerda.   '), 0, 1);
 
 $pdf->Ln(5);
 
-// Armar strings para el PDF
 $tipos_equipo = [];
 $marcas = [];
 $modelos = [];
@@ -102,7 +101,7 @@ for ($i = 0; $i < count($codigos); $i++) {
     $modelos[]            = $insumos[$i];
     $series[]             = $codigos[$i];
     $ubicaciones_finales[]= $ubicaciones[$i];
-    $destinos_finales[]   = $destinos[$i] ?? ''; // <- destinos para PDF
+    $destinos_finales[]   = $destinos[$i] ?? '';
 }
 
 $tipos_equipo_str = implode(' / ', $tipos_equipo);
@@ -127,15 +126,12 @@ $pdf->Cell(130, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $modelos_str), 1, 1);
 $pdf->Cell(60, 20, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'SERIE:'), 1, 0, 'L', true);
 $pdf->Cell(130, 20, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $series_str), 1, 1);
 
-// NOMBRE DEL EQUIPO (lo dejas vacío si no hay campo)
 $pdf->Cell(60, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'NOMBRE DEL EQUIPO:'), 1, 0, 'L', true);
 $pdf->Cell(130, 8, '', 1, 1);
 
-// SERVICIO = Destino(s)
 $pdf->Cell(60, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'SERVICIO:'), 1, 0, 'L', true);
 $pdf->Cell(130, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $destinos_str), 1, 1);
 
-// UBICACIÓN = lo que mandaste en el form (si corresponde)
 $pdf->Cell(60, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'UBICACIÓN:'), 1, 0, 'L', true);
 $pdf->Cell(130, 8, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $ubicaciones_str), 1, 1);
 
@@ -158,13 +154,13 @@ $pdf->Cell(130, 15, '', 1, 1);
 $pdf->Ln(5);
 
 $pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Recibo conforme el equipo asignado, junto a la información migrada no habiendo reparos u objeciones'), 0, 1);
-$pdf->Ln(1);
-$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Nota: Se solicita informar el traslado o algún daño sufrido por el equipo, esto para efectos de garantías o '), 0, 1);
-$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'reparaciones a correo soporte.ti.hfbc@redsalud.gov.cl anexo 226868'), 0, 1);
+$pdf->Ln(2);
+$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'Nota: Se solicita informar traslado, incidencia o daño en el equipo, esto para efectos de garantías,'), 0, 1);
+$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', 'reparaciones y/o asistencia, en el correo soporteti.hfbc@redsalud.gob.cl y en caso de consultas al anexo 226868'), 0, 1);
+$pdf->Cell(0,10, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', ' y/o el correo descrito anteriormente'), 0, 1);
 
 $pdf->Ln(5);
 
-// Limpieza de /temp (archivos > 28 días)
 $carpetaComprobantes = __DIR__ . '/temp/';
 $hace28Dias = time() - (28 * 24 * 60 * 60);
 if (is_dir($carpetaComprobantes)) {
@@ -175,7 +171,6 @@ if (is_dir($carpetaComprobantes)) {
     }
 }
 
-// Guardar y descargar
 $nombreArchivo = 'retiro_insumos_' . date('Ymd_His') . '.pdf';
 $rutaArchivo = 'temp/' . $nombreArchivo;
 $pdf->Output('F', $rutaArchivo);

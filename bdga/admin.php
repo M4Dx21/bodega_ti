@@ -69,15 +69,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ingresar'])) {
     $nombre = $_POST['nombre'];
     $pass = $_POST['pass'];
     $rol = $_POST['rol'];
-    $correo = $_POST['correo'];
 
     if (rutExists($rut, $conn)) {
         $sql_update = "UPDATE usuarios 
-                       SET nombre = ?, pass = ?, rol = ?, correo = ?
+                       SET nombre = ?, pass = ?, rol = ?
                        WHERE rut = ?";
 
         if ($stmt = $conn->prepare($sql_update)) {
-            $stmt->bind_param("sssss", $nombre, $pass, $rol, $correo, $rut);
+            $stmt->bind_param("sssss", $nombre, $pass, $rol, $rut);
 
             if ($stmt->execute()) {
                 echo "Usuario actualizado correctamente.";
@@ -92,8 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ingresar'])) {
             echo "Error en la preparación de la consulta: " . $conn->error;
         }
     } else {
-        $sql_insert = "INSERT INTO usuarios (rut, nombre, pass, rol, correo) 
-                       VALUES ('$rut', '$nombre', '$pass', '$rol', '$correo')";
+        $sql_insert = "INSERT INTO usuarios (rut, nombre, pass, rol) 
+                       VALUES ('$rut', '$nombre', '$pass', '$rol')";
 
         if ($conn->query($sql_insert) === TRUE) {
             echo "Usuario registrado correctamente.";
@@ -140,7 +139,7 @@ if ($result3->num_rows > 0) {
         $solicitudes_result3[] = $row;
     }
 }
-$sql4 = "SELECT nombre, rut, rol FROM usuarios WHERE rol = 'doctor'";
+$sql4 = "SELECT nombre, rut, rol FROM usuarios WHERE rol = 'funcionario'";
 $result4 = $conn->query($sql4);
 $solicitudes_result4 = [];
 if ($result4->num_rows > 0) {
@@ -168,27 +167,6 @@ if ($result4->num_rows > 0) {
         </form>
     </div>
     <script>
-        function toggleCorreo() {
-            var rol = document.getElementById('rol').value;
-            var correoInput = document.getElementById('correo');
-            
-            if (rol === 'admin') {
-                correoInput.disabled = true;
-            }
-            else if (rol === 'doctor') {
-                correoInput.disabled = true;
-            } else {
-                correoInput.disabled = false;
-            }
-        }
-
-        function limpiarRut() {
-            const rutInput = document.getElementById("rut");
-            let rut = rutInput.value;
-            rut = rut.replace(/\./g, "");
-            rutInput.value = rut;
-        }
-
         window.onload = function() {
             toggleCorreo();
         };
@@ -197,17 +175,15 @@ if ($result4->num_rows > 0) {
 <body>
     <div class="container">
         <form method="POST" action="">
-            <select name="rol" required id="rol" onchange="toggleCorreo()">
+            <select name="rol" required id="rol">
                 <option value="">Selecciona una opcion</option>
                 <option value="bodeguero">Bodeguero</option>
                 <option value="admin">Admin</option>
-                <option value="doctor">Doctor</option>
+                <option value="funcionario">Funcionario</option>
             </select>
-            <input type="text" name="rut" placeholder="RUT (sin puntos ni guion, solo con guion para ingresar usuario tipo administrador)" required id="rut" onblur="validarRUTInput()" oninput="limpiarRut()">
+            <input type="text" name="rut" placeholder="RUT (sin puntos ni guion, solo con guion para ingresar usuario tipo administrador)" required id="rut">
             <input type="text" name="nombre" placeholder="Nombre" required id="nombre">
             <input type="password" name="pass" placeholder="Contraseña" required id="pass">
-
-            <input type="email" name="correo" placeholder="Correo" required id="correo">
             <button type="submit" name="ingresar">Registrar Usuario</button>
         </form>
         <form action="agregarcomp.php" method="post">
